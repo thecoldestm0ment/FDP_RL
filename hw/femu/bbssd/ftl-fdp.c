@@ -1155,6 +1155,59 @@ int do_gc_fdp_style(struct ssd *ssd, uint16_t rgid, uint16_t ruhid,
 }
 
 /*
+ * Keep H0 observability cheap enough for multi-million-write runs.  The
+ * normal FDP trace records allocation/GC events; this snapshot adds the RU
+ * population plus per-RUH live/invalid pages once per 65,536 host pages.
+ */
+static void fdp_trace_h0_snapshot(struct ssd *ssd)
+{
+    const uint64_t interval = 65536;
+    uint64_t host_pages = ssd->host_write_pages;
+
+    if (!ssd->fdp_debug || !host_pages || host_pages % interval) {
+        return;
+    }
+
+    for (uint64_t rgid = 0; rgid < ssd->nrg; rgid++) {
+        FemuReclaimGroup *rg = &ssd->rg[rgid];
+        struct ru_mgmt *rm = rg->ru_mgmt;
+
+        FDP_TRACE(ssd, "H0_SNAPSHOT host_pages=%" PRIu64
+                  " rgid=%" PRIu64 " free=%" PRIu64
+                  " victim=%d full=%d\n",
+                  host_pages, rgid, rm->free_ru_cnt,
+                  rm->victim_ru_cnt, rm->full_ru_cnt);
+
+        for (uint64_t ruhid = 0; ruhid < ssd->nruhs; ruhid++) {
+            uint64_t vpc = 0;
+            uint64_t ipc = 0;
+            uint64_t assigned = 0;
+
+            for (int r = 0; r < rg->tt_nru; r++) {
+                FemuReclaimUnit *ru = &rg->rus[r];
+
+                if (ru->ruh && ru->ruh->ruhid == ruhid) {
+                    assigned++;
+                    vpc += ru->vpc;
+                    ipc += ru->ipc;
+                }
+            }
+
+            FDP_TRACE(ssd, "H0_RUH host_pages=%" PRIu64
+                      " rgid=%" PRIu64 " ruhid=%" PRIu64
+                      " assigned=%" PRIu64 " vpc=%" PRIu64
+                      " ipc=%" PRIu64 " in_use=%d curr_ru=%u gc_ru=%u\n",
+                      host_pages, rgid, ruhid, assigned, vpc, ipc,
+                      ssd->ruhs[ruhid].ru_in_use_cnt,
+                      ssd->ruhs[ruhid].curr_ru ?
+                          ssd->ruhs[ruhid].curr_ru->ruidx : UINT32_MAX,
+                      ssd->ruhs[ruhid].gc_ru ?
+                          ssd->ruhs[ruhid].gc_ru->ruidx : UINT32_MAX);
+        }
+    }
+}
+
+/*
  * ssd_stream_write - FDP write path: placement-aware page allocation
  */
 static uint64_t ssd_stream_write(FemuCtrl *n, struct ssd *ssd,
@@ -1213,10 +1266,6 @@ static uint64_t ssd_stream_write(FemuCtrl *n, struct ssd *ssd,
     }
     rg = &ssd->rg[rgid];
     ruh = &ssd->ruhs[ruhid];
-
-    // FDP_TRACE(ssd, "WRITE lpn=%lu-%lu dtype=%u dspec=0x%x ph=%u "
-    //           "ruhid=%u rgid=%u\n", start_lpn, end_lpn, dtype, pid,
-    //           ph, ruhid, rgid);
 
     /*
      * Ensure this RUH has an active RU.  After a sequential fill,
@@ -1330,6 +1379,7 @@ static uint64_t ssd_stream_write(FemuCtrl *n, struct ssd *ssd,
          */
         ssd->host_write_pages++;
         written++;
+        fdp_trace_h0_snapshot(ssd);
 
         /* RUAMW counts blocks, and a page may hold several or half of one */
         if (ru->nvme_ru) {

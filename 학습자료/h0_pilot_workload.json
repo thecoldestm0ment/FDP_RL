@@ -1,0 +1,68 @@
+{
+  "case": "pilot",
+  "allow_execute": true,
+  "device": "/dev/ng0n1",
+  "block_device": "/dev/nvme0n1",
+  "namespace_bytes": 3221225472,
+  "block_size": 4096,
+  "seed": 42,
+  "iodepth": 32,
+  "aggregate_iops": 60000,
+  "regions": {
+    "A": {"offset_bytes": 0, "length_bytes": 805306368},
+    "B": {"offset_bytes": 805306368, "length_bytes": 805306368},
+    "C": {"offset_bytes": 1610612736, "length_bytes": 1610612736}
+  },
+  "phases": [
+    {
+      "name": "initial_fill",
+      "kind": "fill",
+      "host_writes": 786432,
+      "weights": {"A": 25, "B": 25, "C": 50},
+      "pids": {"A": 0, "B": 1, "C": 1},
+      "unique_lba": true
+    },
+    {
+      "name": "precondition_01",
+      "kind": "precondition",
+      "host_writes": 786432,
+      "weights": {"A": 82, "B": 6, "C": 12},
+      "pids": {"A": 0, "B": 1, "C": 1}
+    },
+    {
+      "name": "precondition_02",
+      "kind": "precondition",
+      "host_writes": 786432,
+      "weights": {"A": 82, "B": 6, "C": 12},
+      "pids": {"A": 0, "B": 1, "C": 1}
+    },
+    {
+      "name": "precondition_03",
+      "kind": "precondition",
+      "host_writes": 786432,
+      "weights": {"A": 82, "B": 6, "C": 12},
+      "pids": {"A": 0, "B": 1, "C": 1}
+    },
+    {
+      "name": "precondition_04",
+      "kind": "precondition",
+      "host_writes": 786432,
+      "weights": {"A": 82, "B": 6, "C": 12},
+      "pids": {"A": 0, "B": 1, "C": 1}
+    },
+    {
+      "name": "precondition_05",
+      "kind": "precondition",
+      "host_writes": 786432,
+      "weights": {"A": 82, "B": 6, "C": 12},
+      "pids": {"A": 0, "B": 1, "C": 1}
+    },
+    {
+      "name": "precondition_06",
+      "kind": "precondition",
+      "host_writes": 786432,
+      "weights": {"A": 82, "B": 6, "C": 12},
+      "pids": {"A": 0, "B": 1, "C": 1}
+    }
+  ]
+}
