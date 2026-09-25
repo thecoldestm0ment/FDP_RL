@@ -15,6 +15,113 @@ static void mark_page_valid_fdp(struct ssd *ssd, struct ppa *ppa,
 static void mark_page_invalid_fdp(struct ssd *ssd, struct ppa *ppa);
 static void ssd_reset_maptbl(struct ssd *ssd);
 
+/* Hash scalar values byte by byte so the trace does not depend on pointers,
+ * struct padding, host byte order, or the victim heap's internal ordering. */
+static uint64_t h0_hash_u64(uint64_t hash, uint64_t value)
+{
+    for (int i = 0; i < 8; i++) {
+        hash ^= (uint8_t)(value >> (i * 8));
+        hash *= UINT64_C(1099511628211);
+    }
+    return hash;
+}
+
+void fdp_h0_trace_state(struct ssd *ssd)
+{
+    uint64_t state = UINT64_C(14695981039346656037);
+    uint64_t queue = UINT64_C(14695981039346656037);
+    uint64_t mapped = 0;
+
+    if (!ssd->fdp_enabled || !ssd->fdp_debug) {
+        return;
+    }
+    for (uint64_t lpn = 0; lpn < ssd->sp.tt_pgs; lpn++) {
+        struct ppa ppa = get_maptbl_ent(ssd, lpn);
+        state = h0_hash_u64(state, ppa.ppa);
+        if (ppa.ppa != UNMAPPED_PPA && ppa.ppa != INVALID_PPA) {
+            state = h0_hash_u64(state, get_pg(ssd, &ppa)->status);
+            mapped++;
+        }
+    }
+    /* Include physical page validity, including invalid pages with no L2P
+     * owner. This is a canonical address scan, never a heap/list walk. */
+    for (int ch = 0; ch < ssd->sp.nchs; ch++) {
+        for (int lun = 0; lun < ssd->sp.luns_per_ch; lun++) {
+            for (int pl = 0; pl < ssd->sp.pls_per_lun; pl++) {
+                for (int blk = 0; blk < ssd->sp.blks_per_pl; blk++) {
+                    struct ppa ppa = { .ppa = 0 };
+                    ppa.g.ch = ch;
+                    ppa.g.lun = lun;
+                    ppa.g.pl = pl;
+                    ppa.g.blk = blk;
+                    for (int pg = 0; pg < ssd->sp.pgs_per_blk; pg++) {
+                        ppa.g.pg = pg;
+                        int status = get_pg(ssd, &ppa)->status;
+                        state = h0_hash_u64(state, status);
+                        if (status == PG_VALID) {
+                            state = h0_hash_u64(state,
+                                                get_rmap_ent(ssd, &ppa));
+                        }
+                    }
+                }
+            }
+        }
+    }
+    for (uint64_t rgid = 0; rgid < ssd->nrg; rgid++) {
+        FemuReclaimGroup *rg = &ssd->rg[rgid];
+        struct ru_mgmt *rm = rg->ru_mgmt;
+        FemuReclaimUnit *member;
+        uint8_t *membership = g_new0(uint8_t, rg->tt_nru);
+
+        QTAILQ_FOREACH(member, &rm->free_ru_list, entry) {
+            membership[member->ruidx] = 1;
+        }
+        QTAILQ_FOREACH(member, &rm->full_ru_list, entry) {
+            membership[member->ruidx] = 2;
+        }
+        state = h0_hash_u64(state, rm->free_ru_cnt);
+        state = h0_hash_u64(state, rm->full_ru_cnt);
+        state = h0_hash_u64(state, rm->victim_ru_cnt);
+        for (uint64_t i = 0; i < rg->tt_nru; i++) {
+            FemuReclaimUnit *ru = &rg->rus[i];
+            uint64_t kind = ru->pos ? 3 : membership[i];
+
+            state = h0_hash_u64(state, kind);
+            state = h0_hash_u64(state, ru->ruh ? ru->ruh->ruhid + 1 : 0);
+            state = h0_hash_u64(state, ru->vpc);
+            state = h0_hash_u64(state, ru->ipc);
+            state = h0_hash_u64(state, ru->next_line_index);
+            if (ru->ssd_wptr) {
+                state = h0_hash_u64(state, ru->ssd_wptr->ch);
+                state = h0_hash_u64(state, ru->ssd_wptr->lun);
+                state = h0_hash_u64(state, ru->ssd_wptr->pl);
+                state = h0_hash_u64(state, ru->ssd_wptr->pg);
+            }
+            /* Sorted by RU ID, independent of heap array positions. */
+            if (ru->pos) {
+                queue = h0_hash_u64(queue, rgid);
+                queue = h0_hash_u64(queue, ru->ruidx);
+                queue = h0_hash_u64(queue, ru->vpc);
+            }
+        }
+        g_free(membership);
+    }
+    for (uint64_t i = 0; i < ssd->nruhs; i++) {
+        FemuRuHandle *ruh = &ssd->ruhs[i];
+        state = h0_hash_u64(state, ruh->curr_ru ? ruh->curr_ru->ruidx + 1 : 0);
+        state = h0_hash_u64(state, ruh->gc_ru ? ruh->gc_ru->ruidx + 1 : 0);
+        state = h0_hash_u64(state, ruh->ru_in_use_cnt);
+        state = h0_hash_u64(state, ruh->ruh_live_pages_cnt);
+    }
+    state = h0_hash_u64(state, ssd->host_write_pages);
+    state = h0_hash_u64(state, ssd->nand_write_pages);
+    state = h0_hash_u64(state, ssd->gc_write_pages);
+    FDP_TRACE(ssd, "H0_STATE host_pages=%" PRIu64 " mapped=%" PRIu64
+              " state=%016" PRIx64 " victim_queue=%016" PRIx64
+              " gc_delayed=%" PRIu64 "\n", ssd->host_write_pages,
+              mapped, state, queue, ssd->h0_gc_delayed);
+}
+
 /* FDP: victim RU priority queue callbacks (greedy by vpc) */
 static inline int victim_ru_cmp_pri(pqueue_pri_t next, pqueue_pri_t curr)
 {
@@ -719,7 +826,7 @@ static FemuReclaimUnit *select_victim_ru(struct ssd *ssd, uint16_t rgid,
              */
             struct ru_mgmt *victim_rm = ssd->rg[victim_ru->rgidx].ru_mgmt;
             /* put it back */
-            FDP_TRACE(ssd, "GC_BACK_RESERT triggered but delay GC (ru %d ipc %d threshold %d full %d)\n",victim_ru->ruidx, victim_ru->ipc, threshold, victim_ru->npages);
+            ssd->h0_gc_delayed++;
             if (victim_rm->mgmt_type == GC_GLOBAL_CB){
                 pqueue_insert(victim_rm->victim_ru_cb, victim_ru);
             }else{
@@ -1052,6 +1159,54 @@ int do_gc_fdp_style(struct ssd *ssd, uint16_t rgid, uint16_t ruhid,
         ftl_assert(false && __LINE__);
         return -1;
     }
+
+    uint64_t region_pages[3] = { 0, 0, 0 };
+    uint64_t unknown_pages = 0;
+    uint64_t exposed_pages = ssd->n->namespaces[0].size /
+                             (spp->secsz * spp->secs_per_pg);
+    uint64_t a_end = exposed_pages / 4;
+    uint64_t b_end = exposed_pages / 2;
+
+    for (int i = 0; i < victim_ru->n_lines; i++) {
+        struct ppa scan = { .ppa = 0 };
+        scan.g.blk = victim_ru->lines[i]->id;
+        for (int ch = 0; ch < spp->nchs; ch++) {
+            scan.g.ch = ch;
+            for (int lun = 0; lun < spp->luns_per_ch; lun++) {
+                scan.g.lun = lun;
+                for (int pl = 0; pl < spp->pls_per_lun; pl++) {
+                    scan.g.pl = pl;
+                    for (int pg = 0; pg < spp->pgs_per_blk; pg++) {
+                        scan.g.pg = pg;
+                        if (get_pg(ssd, &scan)->status != PG_VALID) {
+                            continue;
+                        }
+                        uint64_t lpn = get_rmap_ent(ssd, &scan);
+                        if (lpn < a_end) {
+                            region_pages[0]++;
+                        } else if (lpn < b_end) {
+                            region_pages[1]++;
+                        } else if (lpn < exposed_pages) {
+                            region_pages[2]++;
+                        } else {
+                            unknown_pages++;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    FDP_TRACE(ssd, "H0_GC host_pages=%" PRIu64 " victim_rg=%u"
+              " victim_ruh=%u victim_ru=%u vpc=%d ipc=%d"
+              " A=%" PRIu64 " B=%" PRIu64 " C=%" PRIu64
+              " unknown=%" PRIu64 " free=%" PRIu64 " kind=%s\n",
+              ssd->host_write_pages, victim_ru->rgidx, victim_ruh->ruhid,
+              victim_ru->ruidx, victim_ru->vpc, victim_ru->ipc,
+              region_pages[0], region_pages[1], region_pages[2],
+              unknown_pages,
+              ssd->rg[victim_ru->rgidx].ru_mgmt->free_ru_cnt,
+              force ? "FORCE" : "BACK");
 
     FDP_TRACE(ssd, "GC_START rgid=%u ruhid=%u victim_ru=%u "
               "victim_vpc=%d isolation=%s gc_type=%s\n",

@@ -8,6 +8,7 @@ typedef struct SsdDramBackend {
     void    *logical_space;
     int64_t size; /* in bytes */
     int     femu_mode;
+    int     file_fd; /* -1 for the historical anonymous DRAM backend */
 } SsdDramBackend;
 
 int init_dram_backend(SsdDramBackend **mbe, int64_t nbytes);

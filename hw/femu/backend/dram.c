@@ -1,4 +1,7 @@
 #include <sys/syscall.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include "../nvme.h"
 
 /* Coperd: FEMU Memory Backend (mbe) for emulated SSD */
@@ -55,8 +58,26 @@ static void mbe_numa_bind(void *addr, int64_t len)
 int init_dram_backend(SsdDramBackend **mbe, int64_t nbytes)
 {
     SsdDramBackend *b = *mbe = g_malloc0(sizeof(SsdDramBackend));
+    const char *file = getenv("FEMU_MBE_FILE");
 
     b->size = nbytes;
+    b->file_fd = -1;
+    if (file && file[0]) {
+        b->file_fd = open(file, O_RDWR | O_CREAT | O_EXCL, 0600);
+        if (b->file_fd < 0 || ftruncate(b->file_fd, nbytes) < 0) {
+            femu_err("FEMU_MBE_FILE create/resize failed: %s\n", strerror(errno));
+            exit(1);
+        }
+        b->logical_space = mmap(NULL, nbytes, PROT_READ | PROT_WRITE,
+                                MAP_SHARED, b->file_fd, 0);
+        if (b->logical_space == MAP_FAILED) {
+            femu_err("FEMU_MBE_FILE mmap failed: %s\n", strerror(errno));
+            exit(1);
+        }
+        femu_log("file-backed SSD buffer: %s (%" PRId64 " MiB)\n",
+                 file, nbytes / MiB);
+        return 0;
+    }
     b->logical_space = g_malloc0(nbytes);
 
     /* bind to the requested NUMA node before mlock faults the pages in */
@@ -83,8 +104,13 @@ void free_dram_backend(SsdDramBackend *b)
         return;
     }
     if (b->logical_space) {
-        munlock(b->logical_space, b->size);
-        g_free(b->logical_space);
+        if (b->file_fd >= 0) {
+            munmap(b->logical_space, b->size);
+            close(b->file_fd);
+        } else {
+            munlock(b->logical_space, b->size);
+            g_free(b->logical_space);
+        }
     }
     g_free(b);
 }

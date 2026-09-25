@@ -1,0 +1,186 @@
+#!/usr/bin/env python3
+"""One fresh FEMU H0 run. Results and failed attempts are never overwritten."""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import shutil
+import socket
+import subprocess
+import time
+
+ROOT = Path(__file__).resolve().parents[1]
+QEMU = ROOT / "build-femu/qemu-system-x86_64"
+QEMU_IMG = ROOT / "build-femu/qemu-img"
+BASE = ROOT / ".h0-vm/noble-prepared.qcow2"
+ISO = ROOT / ".h0-vm/seed.iso"
+KEY = ROOT / ".h0-vm/id_ed25519"
+SOURCE = ROOT / "학습자료/h0_single_gen.c"
+SCRIPT = ROOT / "학습자료/h0_v2_guest.sh"
+PORT = 18081
+
+
+def sha256(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for data in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(data)
+    return h.hexdigest()
+
+
+def ssh() -> list[str]:
+    return ["ssh", "-p", str(PORT), "-i", str(KEY), "-o", "BatchMode=yes",
+            "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null",
+            "-o", "ConnectTimeout=5", "femu@127.0.0.1"]
+
+
+def scp() -> list[str]:
+    return ["scp", "-P", str(PORT), "-i", str(KEY), "-o", "BatchMode=yes",
+            "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null"]
+
+
+def run(cmd: list[str], **kwargs) -> subprocess.CompletedProcess:
+    return subprocess.run(cmd, check=True, **kwargs)
+
+
+def main() -> None:
+    p = argparse.ArgumentParser()
+    p.add_argument("--geometry", choices=["g3", "g12"], required=True)
+    p.add_argument("--case", choices=["oracle", "stale", "stable"], required=True)
+    p.add_argument("--result-dir", type=Path, required=True)
+    p.add_argument("--pre-chunks", type=int, default=0)
+    p.add_argument("--post-chunks", type=int, default=0)
+    p.add_argument("--rate", type=int, default=0)
+    p.add_argument("--smoke-writes", type=int, default=0)
+    a = p.parse_args()
+    if min(a.pre_chunks, a.post_chunks, a.rate, a.smoke_writes) < 0:
+        p.error("negative counts/rate are invalid")
+    if a.smoke_writes == 0 and a.pre_chunks == 0:
+        p.error("full run requires at least one preconditioning chunk")
+    result = a.result_dir.resolve()
+    if result.exists():
+        p.error(f"result directory exists: {result}")
+    with socket.socket() as sock:
+        if sock.connect_ex(("127.0.0.1", PORT)) == 0:
+            p.error(f"TCP port {PORT} is in use")
+    for path in (QEMU, QEMU_IMG, BASE, ISO, KEY, SOURCE, SCRIPT):
+        if not path.exists():
+            p.error(f"missing: {path}")
+    pages = 786432 if a.geometry == "g3" else 3145728
+    nru = 64 if a.geometry == "g3" else 256
+    blocks_per_plane = 64 if a.geometry == "g3" else 256
+    memory = "4G" if a.geometry == "g3" else "2G"
+    result.mkdir(parents=True)
+    backend_path = None
+    if a.geometry == "g12":
+        zram_dir = Path("/tmp/h0-v2-zram")
+        if not zram_dir.is_dir():
+            p.error("missing mounted zram backend: /tmp/h0-v2-zram")
+        backend_path = zram_dir / f"h0-v2-{result.name}.bin"
+        if backend_path.exists():
+            p.error(f"backend file exists: {backend_path}")
+    binary = result / "h0_single_gen"
+    shutil.copy2(SOURCE, result / SOURCE.name)
+    shutil.copy2(SCRIPT, result / SCRIPT.name)
+    with (result / "femu-source.patch").open("w") as patch_file:
+        run(["git", "diff", "--binary", "--", ".gitignore",
+             "hw/femu/backend/dram.c", "hw/femu/backend/dram.h",
+             "hw/femu/bbssd/ftl.c", "hw/femu/bbssd/ftl.h",
+             "hw/femu/bbssd/ftl-internal.h", "hw/femu/bbssd/ftl-fdp.c"],
+            cwd=ROOT, stdout=patch_file)
+    run(["cc", "-O2", "-Wall", "-Wextra", "-Werror", "-static",
+         str(SOURCE), "-luring", "-o", str(binary)])
+    overlay = result / "guest-overlay.qcow2"
+    with (result / "qemu-img.log").open("w") as log:
+        run([str(QEMU_IMG), "create", "-f", "qcow2", "-F", "qcow2",
+             "-b", str(BASE), str(overlay)], stdout=log)
+    manifest = {
+        "commit": run(["git", "rev-parse", "HEAD"], cwd=ROOT,
+                      capture_output=True, text=True).stdout.strip(),
+        "geometry": a.geometry, "case": a.case, "pages": pages,
+        "pre_chunks": a.pre_chunks, "post_chunks": a.post_chunks,
+        "rate": a.rate, "smoke_writes": a.smoke_writes,
+        "qemu_sha256": sha256(QEMU), "generator_sha256": sha256(binary),
+        "generator_source_sha256": sha256(SOURCE),
+        "guest_runner_sha256": sha256(SCRIPT),
+        "base_sha256": sha256(BASE), "fresh_qemu": True,
+        "fresh_overlay": True,
+        "backend": "zram-file" if backend_path else "dram",
+        "backend_path": str(backend_path) if backend_path else None,
+        "backend_retained": False if backend_path else None,
+    }
+    (result / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    qmp = result / "qmp.sock"
+    command = [
+        str(QEMU), "-name", f"h0v2-{a.geometry}-{a.case}",
+        "-accel", "kvm", "-cpu", "host", "-smp", "4", "-m", memory,
+        "-L", str(ROOT / "pc-bios"), "-device", "virtio-scsi-pci,id=scsi0",
+        "-drive", f"file={overlay},if=none,format=qcow2,id=osdisk",
+        "-device", "scsi-hd,drive=osdisk",
+        "-netdev", f"user,id=net0,hostfwd=tcp:127.0.0.1:{PORT}-:22",
+        "-device", "virtio-net-pci,netdev=net0", "-display", "none",
+        "-serial", f"file:{result / 'serial.log'}", "-monitor", "none",
+        "-qmp", f"unix:{qmp},server=on,wait=off",
+        "-device", f"femu-subsys,id=femu-subsys-0,nqn=subsys0,fdp=on,fdp.nruh=4,fdp.nrg=1,fdp.nru={nru},fdp.isolation_mode=0",
+        "-device", f"femu,id=nvme0,devsz_mb={pages // 256},namespaces=1,secsz=512,secs_per_pg=8,pgs_per_blk=256,blks_per_pl={blocks_per_plane},pls_per_lun=1,luns_per_ch=8,nchs=8,pg_rd_lat=40000,pg_wr_lat=200000,blk_er_lat=2000000,ch_xfer_lat=0,gc_thres_pcent=75,gc_thres_pcent_high=95,gc_strategy=0,buffer_size=0,femu_mode=1,subsys=femu-subsys-0",
+        "-drive", f"file={ISO},format=raw,media=cdrom,readonly=on",
+        "-boot", "order=c",
+    ]
+    (result / "vm-command.json").write_text(json.dumps(command, indent=2) + "\n")
+    env = os.environ.copy()
+    env["FEMU_FDP_DEBUG"] = "1"
+    if backend_path:
+        env["FEMU_MBE_FILE"] = str(backend_path)
+    with (result / "qemu.stdout").open("w") as out, \
+         (result / "femu.log").open("w") as err:
+        vm = subprocess.Popen(command, cwd=ROOT, env=env, stdout=out, stderr=err)
+        guest_rc = 1
+        try:
+            deadline = time.monotonic() + 240
+            while time.monotonic() < deadline:
+                if vm.poll() is not None:
+                    raise RuntimeError(f"QEMU exited early: {vm.returncode}")
+                probe = subprocess.run(ssh() + ["sudo -n true"],
+                                       stdout=subprocess.DEVNULL,
+                                       stderr=subprocess.DEVNULL)
+                if probe.returncode == 0:
+                    break
+                time.sleep(2)
+            else:
+                raise RuntimeError("guest SSH did not become ready")
+            run(ssh() + ["mkdir -p /tmp/h0-v2-input && rm -rf /tmp/h0-v2-output"])
+            run(scp() + [str(binary), str(SCRIPT),
+                         "femu@127.0.0.1:/tmp/h0-v2-input/"])
+            cmd = ["sudo", "bash", "/tmp/h0-v2-input/h0_v2_guest.sh",
+                   a.case, str(pages), str(a.pre_chunks), str(a.post_chunks),
+                   str(a.rate), str(a.smoke_writes)]
+            with (result / "guest-command.stdout").open("w") as gout, \
+                 (result / "guest-command.stderr").open("w") as gerr:
+                guest = subprocess.run(ssh() + cmd, stdout=gout, stderr=gerr,
+                                       timeout=8 * 60 * 60)
+                guest_rc = guest.returncode
+            run(scp() + ["-r", "femu@127.0.0.1:/tmp/h0-v2-output",
+                         str(result / "guest")])
+        finally:
+            subprocess.run(ssh() + ["sudo poweroff"],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            try:
+                vm.wait(timeout=60)
+            except subprocess.TimeoutExpired:
+                vm.terminate()
+                vm.wait(timeout=30)
+            (result / "exit-status.json").write_text(json.dumps({
+                "guest_rc": guest_rc, "qemu_rc": vm.returncode,
+            }, indent=2) + "\n")
+            if backend_path and backend_path.exists():
+                backend_path.unlink()
+    if guest_rc:
+        raise SystemExit(f"guest run failed: {guest_rc}")
+    print(f"H0_V2_RUN_PASS {result}")
+
+
+if __name__ == "__main__":
+    main()

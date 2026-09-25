@@ -461,6 +461,7 @@ struct ssd {
     uint64_t nruhs;
     bool fdp_enabled;
     bool fdp_debug;    /* enable FDP FTL tracing */
+    uint64_t h0_gc_delayed; /* suppressed eligibility failures for H0 trace */
 
     /*
      * Optional DRAM read cache (timing-only; capacity 0 = disabled). It models

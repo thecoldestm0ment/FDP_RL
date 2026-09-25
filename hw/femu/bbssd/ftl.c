@@ -461,6 +461,12 @@ uint64_t bb_ftl_process_req(FemuCtrl *n, NvmeNamespace *ns, NvmeRequest *req)
         do_gc(ssd, false);
     }
 
+    /* A drained NVMe flush is the phase boundary used by the H0 runner. */
+    if (ssd->fdp_enabled && ssd->fdp_debug &&
+        req->cmd.opcode == NVME_CMD_FLUSH) {
+        fdp_h0_trace_state(ssd);
+    }
+
     return lat;
 }
 
