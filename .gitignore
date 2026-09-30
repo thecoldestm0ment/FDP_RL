@@ -137,3 +137,4 @@ build/
 /.h0-vm/
 /results/h0/
 /results/h0_v2/
+/results/**/guest-overlay.qcow2

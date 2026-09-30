@@ -27,7 +27,8 @@ def fields(line: str) -> dict[str, str]:
 
 def summarize(run: Path) -> dict:
     guest = run / "guest"
-    snapshots = sorted((guest / "snapshots").glob("*.c0.bin"))
+    snapshots = sorted((guest / "snapshots").glob("*.c0.bin"),
+                       key=lambda path: stats(path)["host_pages"])
     if not snapshots:
         raise ValueError(f"no snapshots: {run}")
     rows = []
@@ -55,11 +56,14 @@ def summarize(run: Path) -> dict:
         rows.append(row)
         prior = current
     states = []
+    components = []
     gcs = []
     done = []
     for line in (run / "femu.log").open(errors="replace"):
         if "H0_STATE " in line:
             states.append(fields(line))
+        elif "H0_COMPONENT " in line:
+            components.append(fields(line))
         elif "H0_GC " in line:
             gcs.append(fields(line))
         elif "GC_DONE " in line:
@@ -67,7 +71,26 @@ def summarize(run: Path) -> dict:
     malformed = [gc for gc in gcs if
                  sum(int(gc[k]) for k in ("A", "B", "C", "unknown"))
                  != int(gc["vpc"])]
+    prior_host = 0
+    for row in rows:
+        end_host = prior_host + row["host_pages"]
+        phase_gcs = [gc for gc in gcs if prior_host < int(gc["host_pages"]) <= end_host]
+        row["gc_events"] = len(phase_gcs)
+        row["gc_exact_ipc_12_5"] = sum(int(gc["ipc"]) == 2048 for gc in phase_gcs)
+        row["gc_exact_nonforced_ipc_12_5"] = sum(
+            gc["kind"] == "BACK" and int(gc["ipc"]) == 2048 for gc in phase_gcs)
+        row["gc_force"] = sum(gc["kind"] == "FORCE" for gc in phase_gcs)
+        row["gc_A_pages"] = sum(int(gc["A"]) for gc in phase_gcs)
+        row["gc_B_pages"] = sum(int(gc["B"]) for gc in phase_gcs)
+        row["gc_C_pages"] = sum(int(gc["C"]) for gc in phase_gcs)
+        row["gc_unknown_pages"] = sum(int(gc["unknown"]) for gc in phase_gcs)
+        row["gc_trace_pages_match"] = sum(int(gc["vpc"]) for gc in phase_gcs) == row["gc_pages"]
+        row["gc_min_free"] = min((int(gc["free"]) for gc in phase_gcs), default=None)
+        prior_host = end_host
     return {"run": str(run), "phases": rows, "states": states,
+            "components": components,
+            "gc_trace_pages_match": sum(int(gc["vpc"]) for gc in gcs) == stats(snapshots[-1])["gc_pages"],
+            "gc_done_pages_match": sum(int(gc["pages_migrated"]) for gc in done) == stats(snapshots[-1])["gc_pages"],
             "gc_count": len(gcs), "gc_done_count": len(done),
             "gc_composition_mismatch": len(malformed),
             "gc_ipc": [int(gc["ipc"]) for gc in gcs],

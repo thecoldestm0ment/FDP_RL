@@ -296,8 +296,8 @@ int main(int argc, char **argv)
         s->busy = false;
         active--;
     }
-    qsort(latencies, o.writes, sizeof(*latencies), compare_u64);
     uint64_t elapsed = now_ns() - begin;
+    qsort(latencies, o.writes, sizeof(*latencies), compare_u64);
     printf("{\"phase\":\"%s\",\"placement\":\"%s\",\"writes\":%" PRIu64
            ",\"completed\":%" PRIu64 ",\"reads\":%" PRIu64
            ",\"logical_hash\":\"%016" PRIx64 "\",\"pid_hash\":\"%016" PRIx64

@@ -1,0 +1,12 @@
+{
+  "status": "cancelled_for_user_pause",
+  "parent_pid": 15978,
+  "guard_pid": 388661,
+  "created_utc": "2026-09-28T09:18:04.924342+00:00",
+  "patch_sha256": {
+    "/root/FDP_RL/\ud559\uc2b5\uc790\ub8cc/h1_campaign_validation_guard.py": "b376e5257d6fb54b68c73742c7e58aef3b8770f026838617a59e131a1ff7fd7c",
+    "/root/FDP_RL/\ud559\uc2b5\uc790\ub8cc/h1_campaign_validate_fixed.py": "b808db342f679bc8428b91394d7a0909eb7338aed094282c08c2ae4808b50809"
+  },
+  "scope": "sham fixed target cardinality/denominator only",
+  "cancelled_utc": "2026-09-28T10:15:34.885767+00:00"
+}

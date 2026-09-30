@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import socket
@@ -54,12 +55,21 @@ def main() -> None:
     p.add_argument("--pre-chunks", type=int, default=0)
     p.add_argument("--post-chunks", type=int, default=0)
     p.add_argument("--rate", type=int, default=0)
+    p.add_argument("--prep-qd", type=int, default=32)
+    p.add_argument("--gc-background", type=int, choices=[75, 90], default=75)
     p.add_argument("--smoke-writes", type=int, default=0)
+    p.add_argument("--intervention", choices=["none", "soft", "rewrite25", "rewrite100"], default="none")
+    p.add_argument("--prestate-reference", type=Path)
+    p.add_argument("--verify-rewrite-samples", action="store_true")
     a = p.parse_args()
-    if min(a.pre_chunks, a.post_chunks, a.rate, a.smoke_writes) < 0:
+    if min(a.pre_chunks, a.post_chunks, a.rate, a.smoke_writes) < 0 or not 1 <= a.prep_qd <= 128:
         p.error("negative counts/rate are invalid")
-    if a.smoke_writes == 0 and a.pre_chunks == 0:
-        p.error("full run requires at least one preconditioning chunk")
+    if a.smoke_writes == 0 and a.pre_chunks == 0 and a.post_chunks > 0:
+        p.error("post-shift run requires preconditioning")
+    if a.intervention != "none" and (a.case != "oracle" or a.smoke_writes):
+        p.error("H0-B intervention requires oracle placement and full fill")
+    if a.verify_rewrite_samples and (not a.intervention.startswith("rewrite") or a.pre_chunks or a.post_chunks):
+        p.error("sample verification is for fill-only rewrite smoke tests")
     result = a.result_dir.resolve()
     if result.exists():
         p.error(f"result directory exists: {result}")
@@ -73,11 +83,30 @@ def main() -> None:
     nru = 64 if a.geometry == "g3" else 256
     blocks_per_plane = 64 if a.geometry == "g3" else 256
     memory = "4G" if a.geometry == "g3" else "2G"
+    expected_state = None
+    reference_manifest = None
+    if a.prestate_reference:
+        reference_manifest = json.loads((a.prestate_reference / "manifest.json").read_text())
+        target_host = pages * (a.pre_chunks + 1)
+        for line in (a.prestate_reference / "femu.log").open():
+            if "H0_STATE " in line:
+                record = dict(re.findall(r"(\w+)=([^\s]+)", line))
+                if int(record["host_pages"]) == target_host:
+                    expected_state = record
+                    break
+        if expected_state is None:
+            p.error("reference has no matching pre-shift host count")
+        for key, value in {"geometry": a.geometry, "pages": pages,
+                           "pre_chunks": a.pre_chunks, "prep_qd": a.prep_qd,
+                           "gc_background_percent": a.gc_background,
+                           "gc_forced_percent": 95}.items():
+            if reference_manifest.get(key) != value:
+                p.error(f"reference setting differs: {key}")
     result.mkdir(parents=True)
     backend_path = None
     if a.geometry == "g12":
         zram_dir = Path("/tmp/h0-v2-zram")
-        if not zram_dir.is_dir():
+        if not zram_dir.is_mount():
             p.error("missing mounted zram backend: /tmp/h0-v2-zram")
         backend_path = zram_dir / f"h0-v2-{result.name}.bin"
         if backend_path.exists():
@@ -85,6 +114,7 @@ def main() -> None:
     binary = result / "h0_single_gen"
     shutil.copy2(SOURCE, result / SOURCE.name)
     shutil.copy2(SCRIPT, result / SCRIPT.name)
+    shutil.copy2(Path(__file__), result / Path(__file__).name)
     with (result / "femu-source.patch").open("w") as patch_file:
         run(["git", "diff", "--binary", "--", ".gitignore",
              "hw/femu/backend/dram.c", "hw/femu/backend/dram.h",
@@ -103,15 +133,30 @@ def main() -> None:
         "geometry": a.geometry, "case": a.case, "pages": pages,
         "pre_chunks": a.pre_chunks, "post_chunks": a.post_chunks,
         "rate": a.rate, "smoke_writes": a.smoke_writes,
+        "prep_qd": a.prep_qd,
+        "intervention": a.intervention,
+        "intervention_writes": pages // (16 if a.intervention == "rewrite25" else 4) if a.intervention.startswith("rewrite") else 0,
+        "intervention_seed": 42,
+        "intervention_qd": 1,
+        "verify_rewrite_samples": a.verify_rewrite_samples,
+        "prestate_reference": str(a.prestate_reference.resolve()) if a.prestate_reference else None,
+        "expected_pre_state": expected_state,
+        "gc_background_percent": a.gc_background,
+        "gc_forced_percent": 95,
         "qemu_sha256": sha256(QEMU), "generator_sha256": sha256(binary),
         "generator_source_sha256": sha256(SOURCE),
         "guest_runner_sha256": sha256(SCRIPT),
+        "host_runner_sha256": sha256(Path(__file__)),
         "base_sha256": sha256(BASE), "fresh_qemu": True,
         "fresh_overlay": True,
         "backend": "zram-file" if backend_path else "dram",
         "backend_path": str(backend_path) if backend_path else None,
         "backend_retained": False if backend_path else None,
     }
+    if reference_manifest:
+        for key in ("qemu_sha256", "base_sha256"):
+            if manifest[key] != reference_manifest[key]:
+                p.error(f"reference binary/image differs: {key}")
     (result / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     qmp = result / "qmp.sock"
     command = [
@@ -125,7 +170,7 @@ def main() -> None:
         "-serial", f"file:{result / 'serial.log'}", "-monitor", "none",
         "-qmp", f"unix:{qmp},server=on,wait=off",
         "-device", f"femu-subsys,id=femu-subsys-0,nqn=subsys0,fdp=on,fdp.nruh=4,fdp.nrg=1,fdp.nru={nru},fdp.isolation_mode=0",
-        "-device", f"femu,id=nvme0,devsz_mb={pages // 256},namespaces=1,secsz=512,secs_per_pg=8,pgs_per_blk=256,blks_per_pl={blocks_per_plane},pls_per_lun=1,luns_per_ch=8,nchs=8,pg_rd_lat=40000,pg_wr_lat=200000,blk_er_lat=2000000,ch_xfer_lat=0,gc_thres_pcent=75,gc_thres_pcent_high=95,gc_strategy=0,buffer_size=0,femu_mode=1,subsys=femu-subsys-0",
+        "-device", f"femu,id=nvme0,devsz_mb={pages // 256},namespaces=1,secsz=512,secs_per_pg=8,pgs_per_blk=256,blks_per_pl={blocks_per_plane},pls_per_lun=1,luns_per_ch=8,nchs=8,pg_rd_lat=40000,pg_wr_lat=200000,blk_er_lat=2000000,ch_xfer_lat=0,gc_thres_pcent={a.gc_background},gc_thres_pcent_high=95,gc_strategy=0,buffer_size=0,femu_mode=1,subsys=femu-subsys-0",
         "-drive", f"file={ISO},format=raw,media=cdrom,readonly=on",
         "-boot", "order=c",
     ]
@@ -156,12 +201,38 @@ def main() -> None:
                          "femu@127.0.0.1:/tmp/h0-v2-input/"])
             cmd = ["sudo", "bash", "/tmp/h0-v2-input/h0_v2_guest.sh",
                    a.case, str(pages), str(a.pre_chunks), str(a.post_chunks),
-                   str(a.rate), str(a.smoke_writes)]
+                   str(a.rate), str(a.smoke_writes), str(a.prep_qd),
+                   a.intervention, "1" if expected_state else "0",
+                   "1" if a.verify_rewrite_samples else "0"]
             with (result / "guest-command.stdout").open("w") as gout, \
                  (result / "guest-command.stderr").open("w") as gerr:
-                guest = subprocess.run(ssh() + cmd, stdout=gout, stderr=gerr,
-                                       timeout=8 * 60 * 60)
-                guest_rc = guest.returncode
+                guest = subprocess.Popen(ssh() + cmd, stdout=gout, stderr=gerr)
+                guest_deadline = time.monotonic() + 8 * 60 * 60
+                if expected_state:
+                    # Read new phase-boundary trace lines only; no workload progress polling.
+                    with (result / "femu.log").open(errors="replace") as trace:
+                        while guest.poll() is None and time.monotonic() < guest_deadline:
+                            matched = False
+                            for line in trace:
+                                if "H0_STATE " not in line:
+                                    continue
+                                observed = dict(re.findall(r"(\w+)=([^\s]+)", line))
+                                if observed.get("host_pages") != expected_state["host_pages"]:
+                                    continue
+                                accepted = all(observed[k] == expected_state[k]
+                                               for k in ("state", "victim_queue"))
+                                (result / "prestate-check.json").write_text(json.dumps({
+                                    "accepted": accepted, "expected": expected_state,
+                                    "observed": observed,
+                                }, indent=2) + "\n")
+                                marker = "prestate.ok" if accepted else "prestate.reject"
+                                run(ssh() + [f"touch /tmp/h0-v2-input/{marker}"])
+                                matched = True
+                                break
+                            if matched:
+                                break
+                            time.sleep(5)
+                guest_rc = guest.wait(timeout=max(1, guest_deadline - time.monotonic()))
             run(scp() + ["-r", "femu@127.0.0.1:/tmp/h0-v2-output",
                          str(result / "guest")])
         finally:

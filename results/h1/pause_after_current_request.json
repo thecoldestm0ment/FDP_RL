@@ -1,0 +1,14 @@
+{
+  "requested_utc": "2026-09-28T10:15:34.885767+00:00",
+  "campaign_pid": 15978,
+  "runner_pid": 384578,
+  "active": {
+    "stage": "h1a",
+    "threshold": 75,
+    "seed": 42,
+    "mode": "soft",
+    "delay_ru_equivalent": "0",
+    "result": "/root/FDP_RL/results/h1/h1a_g12_75_s42_soft_d0_01"
+  },
+  "completed_before": 7
+}

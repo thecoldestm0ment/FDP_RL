@@ -1,0 +1,3 @@
+NVMe Flush: success
+NVMe Flush: success
+{"writes":32768,"completed":32768,"B":16266,"logical_hash":"08b8d00426935517","pid_hash":"db3a03567628e224","boundary_global":0,"intervention_submitted":0,"intervention_completed":0,"intervention_B":0,"rewrite_reads":49152,"rewrite_writes":49152,"elapsed_ns":17202693351,"paused_ns":14223521296,"stop_ns":21429752073,"drain_ns":21429752097,"pre_ns":21457966510,"rewrite_ns":35624075676,"post_ns":35653273333,"resume_ns":35653273369,"p99_ns":3281087,"p999_ns":11320008}

@@ -1,0 +1,17 @@
+{
+  "accepted": true,
+  "expected": {
+    "host_pages": "15728640",
+    "mapped": "3145728",
+    "state": "cae265a4230941f0",
+    "victim_queue": "b4e6081af409620e",
+    "gc_delayed": "0"
+  },
+  "observed": {
+    "host_pages": "15728640",
+    "mapped": "3145728",
+    "state": "cae265a4230941f0",
+    "victim_queue": "b4e6081af409620e",
+    "gc_delayed": "0"
+  }
+}

@@ -1,0 +1,138 @@
+diff --git a/hw/femu/bbssd/ftl-fdp.c b/hw/femu/bbssd/ftl-fdp.c
+index 93813c570..4e67abe24 100644
+--- a/hw/femu/bbssd/ftl-fdp.c
++++ b/hw/femu/bbssd/ftl-fdp.c
+@@ -31,6 +31,11 @@ void fdp_h0_trace_state(struct ssd *ssd)
+     uint64_t state = UINT64_C(14695981039346656037);
+     uint64_t queue = UINT64_C(14695981039346656037);
+     uint64_t mapped = 0;
++    uint64_t map_hash = UINT64_C(14695981039346656037);
++    uint64_t page_hash = UINT64_C(14695981039346656037);
++    uint64_t ru_hash = UINT64_C(14695981039346656037);
++    uint64_t ruh_hash = UINT64_C(14695981039346656037);
++    uint64_t counter_hash = UINT64_C(14695981039346656037);
+ 
+     if (!ssd->fdp_enabled || !ssd->fdp_debug) {
+         return;
+@@ -38,8 +43,10 @@ void fdp_h0_trace_state(struct ssd *ssd)
+     for (uint64_t lpn = 0; lpn < ssd->sp.tt_pgs; lpn++) {
+         struct ppa ppa = get_maptbl_ent(ssd, lpn);
+         state = h0_hash_u64(state, ppa.ppa);
++        map_hash = h0_hash_u64(map_hash, ppa.ppa);
+         if (ppa.ppa != UNMAPPED_PPA && ppa.ppa != INVALID_PPA) {
+             state = h0_hash_u64(state, get_pg(ssd, &ppa)->status);
++            map_hash = h0_hash_u64(map_hash, get_pg(ssd, &ppa)->status);
+             mapped++;
+         }
+     }
+@@ -58,9 +65,11 @@ void fdp_h0_trace_state(struct ssd *ssd)
+                         ppa.g.pg = pg;
+                         int status = get_pg(ssd, &ppa)->status;
+                         state = h0_hash_u64(state, status);
++                        page_hash = h0_hash_u64(page_hash, status);
+                         if (status == PG_VALID) {
+-                            state = h0_hash_u64(state,
+-                                                get_rmap_ent(ssd, &ppa));
++                            uint64_t owner = get_rmap_ent(ssd, &ppa);
++                            state = h0_hash_u64(state, owner);
++                            page_hash = h0_hash_u64(page_hash, owner);
+                         }
+                     }
+                 }
+@@ -82,6 +91,9 @@ void fdp_h0_trace_state(struct ssd *ssd)
+         state = h0_hash_u64(state, rm->free_ru_cnt);
+         state = h0_hash_u64(state, rm->full_ru_cnt);
+         state = h0_hash_u64(state, rm->victim_ru_cnt);
++        ru_hash = h0_hash_u64(ru_hash, rm->free_ru_cnt);
++        ru_hash = h0_hash_u64(ru_hash, rm->full_ru_cnt);
++        ru_hash = h0_hash_u64(ru_hash, rm->victim_ru_cnt);
+         for (uint64_t i = 0; i < rg->tt_nru; i++) {
+             FemuReclaimUnit *ru = &rg->rus[i];
+             uint64_t kind = ru->pos ? 3 : membership[i];
+@@ -97,6 +109,17 @@ void fdp_h0_trace_state(struct ssd *ssd)
+                 state = h0_hash_u64(state, ru->ssd_wptr->pl);
+                 state = h0_hash_u64(state, ru->ssd_wptr->pg);
+             }
++            ru_hash = h0_hash_u64(ru_hash, kind);
++            ru_hash = h0_hash_u64(ru_hash, ru->ruh ? ru->ruh->ruhid + 1 : 0);
++            ru_hash = h0_hash_u64(ru_hash, ru->vpc);
++            ru_hash = h0_hash_u64(ru_hash, ru->ipc);
++            ru_hash = h0_hash_u64(ru_hash, ru->next_line_index);
++            if (ru->ssd_wptr) {
++                ru_hash = h0_hash_u64(ru_hash, ru->ssd_wptr->ch);
++                ru_hash = h0_hash_u64(ru_hash, ru->ssd_wptr->lun);
++                ru_hash = h0_hash_u64(ru_hash, ru->ssd_wptr->pl);
++                ru_hash = h0_hash_u64(ru_hash, ru->ssd_wptr->pg);
++            }
+             /* Sorted by RU ID, independent of heap array positions. */
+             if (ru->pos) {
+                 queue = h0_hash_u64(queue, rgid);
+@@ -112,10 +135,68 @@ void fdp_h0_trace_state(struct ssd *ssd)
+         state = h0_hash_u64(state, ruh->gc_ru ? ruh->gc_ru->ruidx + 1 : 0);
+         state = h0_hash_u64(state, ruh->ru_in_use_cnt);
+         state = h0_hash_u64(state, ruh->ruh_live_pages_cnt);
++        ruh_hash = h0_hash_u64(ruh_hash, ruh->curr_ru ? ruh->curr_ru->ruidx + 1 : 0);
++        ruh_hash = h0_hash_u64(ruh_hash, ruh->gc_ru ? ruh->gc_ru->ruidx + 1 : 0);
++        ruh_hash = h0_hash_u64(ruh_hash, ruh->ru_in_use_cnt);
++        ruh_hash = h0_hash_u64(ruh_hash, ruh->ruh_live_pages_cnt);
+     }
+     state = h0_hash_u64(state, ssd->host_write_pages);
+     state = h0_hash_u64(state, ssd->nand_write_pages);
+     state = h0_hash_u64(state, ssd->gc_write_pages);
++    counter_hash = h0_hash_u64(counter_hash, ssd->host_write_pages);
++    counter_hash = h0_hash_u64(counter_hash, ssd->nand_write_pages);
++    counter_hash = h0_hash_u64(counter_hash, ssd->gc_write_pages);
++    /* H1-B diagnostic: inspect the current L2P owner RUH at drained flushes.
++     * The fixed rewrite target is the same seed-42 permutation as H0-B. */
++    if (g_getenv("FEMU_H1_STALE") != NULL) {
++        NvmeNamespace *ns = &ssd->n->namespaces[0];
++        uint64_t exposed = ns->size / (ssd->sp.secsz * ssd->sp.secs_per_pg);
++        uint64_t b_start = exposed / 4;
++        uint64_t b_pages = exposed / 4;
++        uint64_t target_count = b_pages / 4;
++        uint64_t all[4] = { 0 }, target[4] = { 0 };
++        uint8_t *selected = g_new0(uint8_t, b_pages);
++        uint64_t target_hash = UINT64_C(14695981039346656037);
++        uint16_t old_ruh = ns->fdp.phs[1];
++        uint16_t new_ruh = ns->fdp.phs[2];
++        for (uint64_t k = 0; k < target_count; k++) {
++            uint64_t idx = (k * 85 + 42) % b_pages;
++            selected[idx] = 1;
++            target_hash = h0_hash_u64(target_hash, b_start + idx);
++        }
++        for (uint64_t i = 0; i < b_pages; i++) {
++            struct ppa ppa = get_maptbl_ent(ssd, b_start + i);
++            int cls = 3;
++            if (mapped_ppa(&ppa) && valid_ppa(ssd, &ppa)) {
++                struct line *line = get_line(ssd, &ppa);
++                FemuReclaimUnit *owner = line->my_ru;
++                if (owner && owner->ruh) {
++                    cls = owner->ruh->ruhid == old_ruh ? 0 :
++                          (owner->ruh->ruhid == new_ruh ? 1 : 2);
++                }
++            }
++            all[cls]++;
++            if (selected[i]) {
++                target[cls]++;
++            }
++        }
++        FDP_TRACE(ssd, "H1_BMAP host_pages=%" PRIu64
++                  " old_ruh=%u new_ruh=%u target_hash=%016" PRIx64
++                  " all_stale=%" PRIu64 " all_correct=%" PRIu64
++                  " all_other=%" PRIu64 " all_unmapped=%" PRIu64
++                  " target_stale=%" PRIu64 " target_correct=%" PRIu64
++                  " target_other=%" PRIu64 " target_unmapped=%" PRIu64 "\n",
++                  ssd->host_write_pages, old_ruh, new_ruh, target_hash,
++                  all[0], all[1], all[2], all[3],
++                  target[0], target[1], target[2], target[3]);
++        g_free(selected);
++    }
++    FDP_TRACE(ssd, "H0_COMPONENT host_pages=%" PRIu64
++              " map=%016" PRIx64 " page=%016" PRIx64
++              " ru=%016" PRIx64 " ruh=%016" PRIx64
++              " counters=%016" PRIx64 "\n",
++              ssd->host_write_pages, map_hash, page_hash, ru_hash,
++              ruh_hash, counter_hash);
+     FDP_TRACE(ssd, "H0_STATE host_pages=%" PRIu64 " mapped=%" PRIu64
+               " state=%016" PRIx64 " victim_queue=%016" PRIx64
+               " gc_delayed=%" PRIu64 "\n", ssd->host_write_pages,

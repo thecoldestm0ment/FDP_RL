@@ -1,0 +1,20 @@
+{
+  "status": "paused",
+  "started_utc": "2026-09-28T10:15:35.041468+00:00",
+  "finalizer_pid": 420785,
+  "run": "/root/FDP_RL/results/h1/h1a_g12_75_s42_soft_d0_01",
+  "completed_runs": 8,
+  "completed_utc": "2026-09-28T10:54:11.376848+00:00",
+  "validation": {
+    "exit_status": {
+      "guest_rc": 0,
+      "qemu_rc": 0
+    },
+    "prestate_accepted": true,
+    "application_writes": 12582912,
+    "rewrite_writes": 0,
+    "counter_invariant": "PASS",
+    "trace_counter_invariant": "PASS",
+    "boundary_stale_recorded": false
+  }
+}

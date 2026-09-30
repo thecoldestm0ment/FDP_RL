@@ -1,0 +1,192 @@
+{
+  "status": "paused",
+  "revised_utc": "2026-09-28T10:55:45.002492+00:00",
+  "seed": 42,
+  "planned_runs": 28,
+  "completed_runs": 8,
+  "remaining_runs": 20,
+  "h1a_remaining": 6,
+  "h1b_remaining": 14,
+  "remaining_plan": [
+    {
+      "stage": "h1a",
+      "threshold": 75,
+      "seed": 42,
+      "mode": "soft",
+      "delay_ru_equivalent": "1",
+      "result": "h1a_g12_75_s42_soft_d1_01"
+    },
+    {
+      "stage": "h1a",
+      "threshold": 75,
+      "seed": 42,
+      "mode": "soft",
+      "delay_ru_equivalent": "4",
+      "result": "h1a_g12_75_s42_soft_d4_01"
+    },
+    {
+      "stage": "h1a",
+      "threshold": 75,
+      "seed": 42,
+      "mode": "soft",
+      "delay_ru_equivalent": "16",
+      "result": "h1a_g12_75_s42_soft_d16_01"
+    },
+    {
+      "stage": "h1a",
+      "threshold": 75,
+      "seed": 42,
+      "mode": "soft",
+      "delay_ru_equivalent": "64",
+      "result": "h1a_g12_75_s42_soft_d64_01"
+    },
+    {
+      "stage": "h1a",
+      "threshold": 75,
+      "seed": 42,
+      "mode": "soft",
+      "delay_ru_equivalent": "128",
+      "result": "h1a_g12_75_s42_soft_d128_01"
+    },
+    {
+      "stage": "h1a",
+      "threshold": 75,
+      "seed": 42,
+      "mode": "soft",
+      "delay_ru_equivalent": "never",
+      "result": "h1a_g12_75_s42_soft_dnever_01"
+    },
+    {
+      "stage": "h1b",
+      "threshold": 90,
+      "seed": 42,
+      "mode": "rewrite25",
+      "delay_ru_equivalent": "0",
+      "result": "h1b_g12_90_s42_rewrite25_d0_01"
+    },
+    {
+      "stage": "h1b",
+      "threshold": 90,
+      "seed": 42,
+      "mode": "rewrite25",
+      "delay_ru_equivalent": "16",
+      "result": "h1b_g12_90_s42_rewrite25_d16_01"
+    },
+    {
+      "stage": "h1b",
+      "threshold": 90,
+      "seed": 42,
+      "mode": "rewrite25",
+      "delay_ru_equivalent": "64",
+      "result": "h1b_g12_90_s42_rewrite25_d64_01"
+    },
+    {
+      "stage": "h1b",
+      "threshold": 90,
+      "seed": 42,
+      "mode": "rewrite25",
+      "delay_ru_equivalent": "128",
+      "result": "h1b_g12_90_s42_rewrite25_d128_01"
+    },
+    {
+      "stage": "h1b",
+      "threshold": 90,
+      "seed": 42,
+      "mode": "sham",
+      "delay_ru_equivalent": "0",
+      "result": "h1b_g12_90_s42_sham_d0_01"
+    },
+    {
+      "stage": "h1b",
+      "threshold": 90,
+      "seed": 42,
+      "mode": "sham",
+      "delay_ru_equivalent": "16",
+      "result": "h1b_g12_90_s42_sham_d16_01"
+    },
+    {
+      "stage": "h1b",
+      "threshold": 90,
+      "seed": 42,
+      "mode": "sham",
+      "delay_ru_equivalent": "128",
+      "result": "h1b_g12_90_s42_sham_d128_01"
+    },
+    {
+      "stage": "h1b",
+      "threshold": 75,
+      "seed": 42,
+      "mode": "rewrite25",
+      "delay_ru_equivalent": "0",
+      "result": "h1b_g12_75_s42_rewrite25_d0_01"
+    },
+    {
+      "stage": "h1b",
+      "threshold": 75,
+      "seed": 42,
+      "mode": "rewrite25",
+      "delay_ru_equivalent": "16",
+      "result": "h1b_g12_75_s42_rewrite25_d16_01"
+    },
+    {
+      "stage": "h1b",
+      "threshold": 75,
+      "seed": 42,
+      "mode": "rewrite25",
+      "delay_ru_equivalent": "64",
+      "result": "h1b_g12_75_s42_rewrite25_d64_01"
+    },
+    {
+      "stage": "h1b",
+      "threshold": 75,
+      "seed": 42,
+      "mode": "rewrite25",
+      "delay_ru_equivalent": "128",
+      "result": "h1b_g12_75_s42_rewrite25_d128_01"
+    },
+    {
+      "stage": "h1b",
+      "threshold": 75,
+      "seed": 42,
+      "mode": "sham",
+      "delay_ru_equivalent": "0",
+      "result": "h1b_g12_75_s42_sham_d0_01"
+    },
+    {
+      "stage": "h1b",
+      "threshold": 75,
+      "seed": 42,
+      "mode": "sham",
+      "delay_ru_equivalent": "16",
+      "result": "h1b_g12_75_s42_sham_d16_01"
+    },
+    {
+      "stage": "h1b",
+      "threshold": 75,
+      "seed": 42,
+      "mode": "sham",
+      "delay_ru_equivalent": "128",
+      "result": "h1b_g12_75_s42_sham_d128_01"
+    }
+  ],
+  "never_controls": [
+    {
+      "threshold": 90,
+      "seed": 42,
+      "rewrite_delay": "never",
+      "reuse_run": "h1a_g12_90_s42_soft_d0_01"
+    },
+    {
+      "threshold": 75,
+      "seed": 42,
+      "rewrite_delay": "never",
+      "reuse_run": "h1a_g12_75_s42_soft_d0_01"
+    }
+  ],
+  "notes": [
+    "Never in H1-B means Soft-only, not H1-A Never.",
+    "Sham 0/16/128 is retained in each GC condition.",
+    "Old 72-run campaign and guard are stopped; resumption must use this revised plan.",
+    "Checkpoint optimization and experiment resumption are not started."
+  ]
+}

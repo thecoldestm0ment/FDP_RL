@@ -1,0 +1,1 @@
+{"phase":"initial","placement":"oracle","writes":3145728,"completed":3145728,"reads":0,"logical_hash":"a35b52998073baef","pid_hash":"e9230728c8b75bc5","A":2578514,"B":189063,"C":378151,"elapsed_ns":847711688978,"iops":3710.85,"p99_ns":651184,"p999_ns":4368031}
