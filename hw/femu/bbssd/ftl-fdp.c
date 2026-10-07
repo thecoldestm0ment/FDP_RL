@@ -717,6 +717,24 @@ static int check_gc_ruh_available(struct ssd *ssd, FemuRuHandle * ruh){
 }
 
 /*
+ * fdp_gc_lazy_defer - should background GC put this victim back?
+ *
+ * lazy_gc_pcent >= 0 follows WARP (do_gc_fdp_style): defer while the RU's
+ * valid occupancy vpc / (vpc + ipc) exceeds the threshold. -1 keeps the
+ * legacy rule (fewer than 1/8 invalid pages) used by earlier experiments.
+ * Forced GC never asks, matching WARP's bypass.
+ */
+static bool fdp_gc_lazy_defer(struct ssd *ssd, FemuReclaimUnit *ru)
+{
+    int lazy = ssd->n->bb_params.lazy_gc_pcent;
+
+    if (lazy < 0) {
+        return ru->vpc > 0 && ru->ipc < ru->npages / 8;
+    }
+    return (uint64_t)ru->vpc * 100 > (uint64_t)lazy * (ru->vpc + ru->ipc);
+}
+
+/*
  * select_victim_ru_from_ruh - pick victim from a specific RUH's queue
  */
 static FemuReclaimUnit *select_victim_ru_from_ruh(struct ssd *ssd,
@@ -893,40 +911,37 @@ static FemuReclaimUnit *select_victim_ru(struct ssd *ssd, uint16_t rgid,
         return NULL;
     }
 
-    if (!force && victim_ru->vpc > 0) {
-        int threshold = victim_ru->npages / 8;
-        if (victim_ru->ipc < threshold) {
+    if (!force && fdp_gc_lazy_defer(ssd, victim_ru)) {
+        /*
+         * Delay GC and put the victim back. Cross-RG NOISY selection can
+         * return an RU that belongs to a different reclaim group than the
+         * caller's rgid, so re-insert it into the victim's OWN RG queue --
+         * matching the global removal above and the shared count decrement
+         * below. Using the caller's rm here would charge the entry to the
+         * wrong heap, and its stored pos would then index that wrong array
+         * on a later remove/change_priority, corrupting the queue.
+         */
+        struct ru_mgmt *victim_rm = ssd->rg[victim_ru->rgidx].ru_mgmt;
+        /* put it back */
+        ssd->h0_gc_delayed++;
+        if (victim_rm->mgmt_type == GC_GLOBAL_CB){
+            pqueue_insert(victim_rm->victim_ru_cb, victim_ru);
+        }else{
+            pqueue_insert(victim_rm->victim_ru_pq, victim_ru);
             /*
-             * Delay GC and put the victim back. Cross-RG NOISY selection can
-             * return an RU that belongs to a different reclaim group than the
-             * caller's rgid, so re-insert it into the victim's OWN RG queue --
-             * matching the global removal above and the shared count decrement
-             * below. Using the caller's rm here would charge the entry to the
-             * wrong heap, and its stored pos would then index that wrong array
-             * on a later remove/change_priority, corrupting the queue.
+             * GC_NOISY_RUH_CUSTOM selection popped this RU from BOTH the
+             * per-RUH and global queues (and zeroed ruh_pos + decremented
+             * the per-RUH count). Restore the per-RUH membership and count
+             * too, or they fall out of sync. pqueue_insert re-sets ruh_pos.
              */
-            struct ru_mgmt *victim_rm = ssd->rg[victim_ru->rgidx].ru_mgmt;
-            /* put it back */
-            ssd->h0_gc_delayed++;
-            if (victim_rm->mgmt_type == GC_GLOBAL_CB){
-                pqueue_insert(victim_rm->victim_ru_cb, victim_ru);
-            }else{
-                pqueue_insert(victim_rm->victim_ru_pq, victim_ru);
-                /*
-                 * GC_NOISY_RUH_CUSTOM selection popped this RU from BOTH the
-                 * per-RUH and global queues (and zeroed ruh_pos + decremented
-                 * the per-RUH count). Restore the per-RUH membership and count
-                 * too, or they fall out of sync. pqueue_insert re-sets ruh_pos.
-                 */
-                if (victim_rm->mgmt_type == GC_NOISY_RUH_CUSTOM &&
-                    victim_ru->ruh && victim_ru->ruh->ru_mgmt) {
-                    pqueue_insert(victim_ru->ruh->ru_mgmt->victim_ru_pq,
-                                  victim_ru);
-                    victim_ru->ruh->ru_mgmt->victim_ru_cnt++;
-                }
+            if (victim_rm->mgmt_type == GC_NOISY_RUH_CUSTOM &&
+                victim_ru->ruh && victim_ru->ruh->ru_mgmt) {
+                pqueue_insert(victim_ru->ruh->ru_mgmt->victim_ru_pq,
+                              victim_ru);
+                victim_ru->ruh->ru_mgmt->victim_ru_cnt++;
             }
-            return NULL;
         }
+        return NULL;
     }
 
     victim_ru->pos = 0;
@@ -1245,8 +1260,10 @@ int do_gc_fdp_style(struct ssd *ssd, uint16_t rgid, uint16_t ruhid,
     uint64_t unknown_pages = 0;
     uint64_t exposed_pages = ssd->n->namespaces[0].size /
                              (spp->secsz * spp->secs_per_pg);
-    uint64_t a_end = exposed_pages / 4;
-    uint64_t b_end = exposed_pages / 2;
+    /* H0 v1/v2 stream layout is A/B/C = 1/4, 1/4, 1/2; v3 uses thirds. */
+    bool thirds = g_getenv("FEMU_H0_THIRDS") != NULL;
+    uint64_t a_end = thirds ? exposed_pages / 3 : exposed_pages / 4;
+    uint64_t b_end = thirds ? exposed_pages / 3 * 2 : exposed_pages / 2;
 
     for (int i = 0; i < victim_ru->n_lines; i++) {
         struct ppa scan = { .ppa = 0 };
@@ -1880,9 +1897,15 @@ void femu_fdp_ssd_init_reclaim_group(FemuCtrl *n, struct ssd *ssd)
             rg->ru_mgmt->gc_thres_rus =
                 (uint64_t)((1 - rg->ru_mgmt->gc_thres_pcent) *
                            rg->tt_nru);
+            /*
+             * Foreground threshold rounds up (integer math, no float error):
+             * with few RUs the floor is 0, which only triggers once no free
+             * RU is left for a PI gc_ru, so forced GC could never start.
+             * The background threshold keeps WARP's floor.
+             */
             rg->ru_mgmt->gc_thres_rus_high =
-                (uint64_t)((1 - rg->ru_mgmt->gc_thres_pcent_high) *
-                           rg->tt_nru);
+                ((uint64_t)(100 - n->bb_params.gc_thres_pcent_high) *
+                     rg->tt_nru + 99) / 100;
             ftl_log("rg[%d] gc threshold (%d%%) %lu/%d RU\n",
                     i, n->bb_params.gc_thres_pcent,
                     rg->ru_mgmt->gc_thres_rus, rg->tt_nru);

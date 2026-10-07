@@ -2004,6 +2004,7 @@ static const Property femu_props[] = {
     DEFINE_PROP_INT32("ch_xfer_lat", FemuCtrl, bb_params.ch_xfer_lat, 0),
     DEFINE_PROP_INT32("gc_thres_pcent", FemuCtrl, bb_params.gc_thres_pcent, 75),
     DEFINE_PROP_INT32("gc_thres_pcent_high", FemuCtrl, bb_params.gc_thres_pcent_high, 95),
+    DEFINE_PROP_INT32("lazy_gc_pcent", FemuCtrl, bb_params.lazy_gc_pcent, -1),
     DEFINE_PROP_INT32("gc_strategy", FemuCtrl, bb_params.gc_strategy, 0),
     DEFINE_PROP_STRING("gc_policy", FemuCtrl, bb_params.gc_policy),
     DEFINE_PROP_UINT32("read_cache_mb", FemuCtrl, read_cache_mb, 0),

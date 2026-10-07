@@ -83,6 +83,13 @@ int bb_check_geometry(FemuCtrl *n, Error **errp)
         return -1;
     }
 
+    /* -1 keeps the legacy lazy rule; otherwise a valid-occupancy percentage */
+    if (p->lazy_gc_pcent < -1 || p->lazy_gc_pcent > 100) {
+        error_setg(errp, "FEMU bbssd: lazy_gc_pcent must be -1 or in [0, 100], "
+                   "got %d", p->lazy_gc_pcent);
+        return -1;
+    }
+
     /* the page-type model has multiplier rows for one to five bits per cell */
     if (p->cell_pages < 0 || p->cell_pages > NAND_MEDIA_MAX_PGTYPE - 1) {
         error_setg(errp, "FEMU bbssd: cell_pages must be in [0, %d]",

@@ -1746,6 +1746,7 @@ typedef struct BbCtrlParams {
 
     int gc_thres_pcent;
     int gc_thres_pcent_high;
+    int lazy_gc_pcent;        /* WARP lazy GC valid-occupancy %; -1 = legacy 1/8 rule */
 
     bool hot_cold_sep;        /* separate overwrites from write-once pages */
     int read_reclaim_limit;   /* reads before a line is rewritten; 0 = never */
