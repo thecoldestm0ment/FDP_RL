@@ -1,0 +1,35 @@
+[FEMU] FDP-Log: Allocated 64 RUs to rg[0]
+[FEMU] FDP-Trace: H1_BMAP host_pages=0 old_ruh=1 new_ruh=2 target_hash=0ae0da3134537dbc all_stale=0 all_correct=0 all_other=0 all_unmapped=196608 target_stale=0 target_correct=0 target_other=0 target_unmapped=49152
+[FEMU] FDP-Trace: H0_COMPONENT host_pages=0 map=849812f6b2a22325 page=637a2df54e222325 ru=6f8a88ff3f2a867d ruh=ee9f2891dae42b21 counters=81d23fd7003c2305
+[FEMU] FDP-Trace: H0_STATE host_pages=0 mapped=0 state=c3e3fcb2034245d9 victim_queue=cbf29ce484222325 gc_delayed=0
+[FEMU] FDP-Trace: RU_ROTATE ruhid=0(curr_ru 0) old_ru=0 new_ru=4 reason=full_victim victim_ru_cnt 1
+[FEMU] FDP-Trace: RU_ROTATE ruhid=0(curr_ru 4) old_ru=4 new_ru=5 reason=full_victim victim_ru_cnt 2
+[FEMU] FDP-Trace: RU_ROTATE ruhid=0(curr_ru 5) old_ru=5 new_ru=6 reason=full_victim victim_ru_cnt 3
+[FEMU] FDP-Trace: H0_SNAPSHOT host_pages=65536 rgid=0 free=57 victim=3 full=0
+[FEMU] FDP-Trace: H0_RUH host_pages=65536 rgid=0 ruhid=0 assigned=4 vpc=46946 ipc=6793 in_use=4 curr_ru=6 gc_ru=4294967295
+[FEMU] FDP-Trace: H0_RUH host_pages=65536 rgid=0 ruhid=1 assigned=1 vpc=11692 ipc=105 in_use=1 curr_ru=1 gc_ru=4294967295
+[FEMU] FDP-Trace: H0_RUH host_pages=65536 rgid=0 ruhid=2 assigned=1 vpc=0 ipc=0 in_use=1 curr_ru=2 gc_ru=4294967295
+[FEMU] FDP-Trace: H0_RUH host_pages=65536 rgid=0 ruhid=3 assigned=1 vpc=0 ipc=0 in_use=1 curr_ru=3 gc_ru=4294967295
+[FEMU] FDP-Trace: H1_BMAP host_pages=65536 old_ruh=1 new_ruh=2 target_hash=0ae0da3134537dbc all_stale=3869 all_correct=0 all_other=0 all_unmapped=192739 target_stale=935 target_correct=0 target_other=0 target_unmapped=48217
+[FEMU] FDP-Trace: H0_COMPONENT host_pages=65536 map=c03dce420768d62a page=1287932b2c168043 ru=35c11f219bb8d8b3 ruh=8d305a997d9eb492 counters=a325895646447de5
+[FEMU] FDP-Trace: H0_STATE host_pages=65536 mapped=58638 state=a3530fe38ed2ecdd victim_queue=6c533228cf625e27 gc_delayed=0
+[FEMU] FDP-Trace: RU_ROTATE ruhid=0(curr_ru 6) old_ru=6 new_ru=7 reason=full_victim victim_ru_cnt 4
+[FEMU] FDP-Trace: RU_ROTATE ruhid=2(curr_ru 2) old_ru=2 new_ru=8 reason=full_victim victim_ru_cnt 5
+[FEMU] FDP-Trace: H1_BMAP host_pages=98531 old_ruh=1 new_ruh=2 target_hash=0ae0da3134537dbc all_stale=1797 all_correct=15721 all_other=0 all_unmapped=179090 target_stale=430 target_correct=3912 target_other=0 target_unmapped=44810
+[FEMU] FDP-Trace: H0_COMPONENT host_pages=98531 map=84be330447c1e6fd page=09d7f96e8aa1a670 ru=998e94b41197f03e ruh=83970f4c8782306f counters=b445203d25e6cdb5
+[FEMU] FDP-Trace: H0_STATE host_pages=98531 mapped=72287 state=c59f363b8c3a10f5 victim_queue=e3da29e40d5ebc9e gc_delayed=0
+[FEMU] FDP-Trace: RU_ROTATE ruhid=2(curr_ru 8) old_ru=8 new_ru=9 reason=full_valid victim_ru_cnt 5
+[FEMU] FDP-Trace: H0_SNAPSHOT host_pages=131072 rgid=0 free=54 victim=5 full=1
+[FEMU] FDP-Trace: H0_RUH host_pages=131072 rgid=0 ruhid=0 assigned=5 vpc=46946 ipc=19351 in_use=5 curr_ru=7 gc_ru=4294967295
+[FEMU] FDP-Trace: H0_RUH host_pages=131072 rgid=0 ruhid=1 assigned=1 vpc=9344 ipc=6506 in_use=1 curr_ru=1 gc_ru=4294967295
+[FEMU] FDP-Trace: H0_RUH host_pages=131072 rgid=0 ruhid=2 assigned=3 vpc=45694 ipc=3231 in_use=3 curr_ru=9 gc_ru=4294967295
+[FEMU] FDP-Trace: H0_RUH host_pages=131072 rgid=0 ruhid=3 assigned=1 vpc=0 ipc=0 in_use=1 curr_ru=3 gc_ru=4294967295
+[FEMU] FDP-Trace: RU_ROTATE ruhid=2(curr_ru 9) old_ru=9 new_ru=10 reason=full_valid victim_ru_cnt 5
+[FEMU] FDP-Trace: RU_ROTATE ruhid=2(curr_ru 10) old_ru=10 new_ru=11 reason=full_valid victim_ru_cnt 5
+[FEMU] FDP-Trace: H1_BMAP host_pages=147683 old_ruh=1 new_ruh=2 target_hash=0ae0da3134537dbc all_stale=1367 all_correct=60961 all_other=0 all_unmapped=134280 target_stale=0 target_correct=49152 target_other=0 target_unmapped=0
+[FEMU] FDP-Trace: H0_COMPONENT host_pages=147683 map=9973ba1f55fc8f4c page=f166c644ff0ba908 ru=6c97069064d1c962 ruh=7e520f1c2ccc1538 counters=dffa64efdbb60e05
+[FEMU] FDP-Trace: H0_STATE host_pages=147683 mapped=117097 state=aae6fc44a3c0500f victim_queue=b5793e589045d6db gc_delayed=0
+[FEMU] FDP-Trace: RU_ROTATE ruhid=1(curr_ru 1) old_ru=1 new_ru=12 reason=full_victim victim_ru_cnt 9
+[FEMU] FDP-Trace: H1_BMAP host_pages=180224 old_ruh=1 new_ruh=2 target_hash=0ae0da3134537dbc all_stale=0 all_correct=71756 all_other=0 all_unmapped=124852 target_stale=0 target_correct=49152 target_other=0 target_unmapped=0
+[FEMU] FDP-Trace: H0_COMPONENT host_pages=180224 map=0fc124ba5f7ef8b1 page=61d23154f460f7c7 ru=81ca70e745eeb47b ruh=75770f501286c13c counters=0283f2a8e37f2a45
+[FEMU] FDP-Trace: H0_STATE host_pages=180224 mapped=126525 state=2ae0c24f8b499d04 victim_queue=660a8c59a985ba40 gc_delayed=0

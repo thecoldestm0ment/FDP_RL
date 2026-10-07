@@ -133,8 +133,10 @@ trace-ust-all.c
 build-femu/
 build/
 *.md
-!학습자료/H0_실험준비.md
+!exp/docs/H0_실험준비.md
+!exp/**/README.md
 /.h0-vm/
-/results/h0/
-/results/h0_v2/
-/results/**/guest-overlay.qcow2
+/exp/H0/_old/v1/runs/
+/exp/H0/v2/runs/
+/exp/**/guest-overlay.qcow2
+!exp/**/femu.log

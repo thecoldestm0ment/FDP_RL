@@ -1,0 +1,81 @@
+run              expRU OP RU Media/App GCcopy/App   WAF util p50 util mean slack/OP   (min-max)   FG% free
+smoke_01            48     5     32.84      31.84 32.84    0.983     0.970     0.90  0.83-0.99  100%    1
+smoke_g12_01        96    10      5.58       4.58  5.58    0.851     0.822     0.53  0.51-0.58  100%    2
+smoke_g24_01       192    20      6.74       5.74  6.74    0.882     0.852     0.32  0.31-0.33  100%    3
+[
+  {
+    "run": "smoke_01",
+    "exposed_ru": 48,
+    "physical_ru": 53,
+    "op_ru": 5,
+    "window": "pre_04->pre_08",
+    "app_pages": 1572864,
+    "media_per_app": 32.840261459350586,
+    "gc_copy_per_app": 31.840261459350586,
+    "waf": 32.840261459350586,
+    "victim_util": {
+      "p10": 0.91973876953125,
+      "p50": 0.98260498046875,
+      "mean": 0.9697541561223528,
+      "p90": 0.999237060546875
+    },
+    "open_slack_per_op": {
+      "mean": 0.901953125,
+      "min": 0.82913818359375,
+      "max": 0.9923095703125
+    },
+    "gc_count": 1576,
+    "forced_share": 1.0,
+    "free_ru_at_gc_median": 1.0
+  },
+  {
+    "run": "smoke_g12_01",
+    "exposed_ru": 96,
+    "physical_ru": 106,
+    "op_ru": 10,
+    "window": "pre_04->pre_08",
+    "app_pages": 3145728,
+    "media_per_app": 5.5799102783203125,
+    "gc_copy_per_app": 4.5799102783203125,
+    "waf": 5.5799102783203125,
+    "victim_util": {
+      "p10": 0.7034912109375,
+      "p50": 0.8505859375,
+      "mean": 0.8218156761098131,
+      "p90": 0.897613525390625
+    },
+    "open_slack_per_op": {
+      "mean": 0.5302505493164062,
+      "min": 0.5086761474609375,
+      "max": 0.5800201416015625
+    },
+    "gc_count": 535,
+    "forced_share": 1.0,
+    "free_ru_at_gc_median": 2
+  },
+  {
+    "run": "smoke_g24_01",
+    "exposed_ru": 192,
+    "physical_ru": 212,
+    "op_ru": 20,
+    "window": "pre_04->pre_08",
+    "app_pages": 6291456,
+    "media_per_app": 6.739970048268636,
+    "gc_copy_per_app": 5.739970048268636,
+    "waf": 6.739970048268636,
+    "victim_util": {
+      "p10": 0.819610595703125,
+      "p50": 0.881927490234375,
+      "mean": 0.8516802544571701,
+      "p90": 0.898223876953125
+    },
+    "open_slack_per_op": {
+      "mean": 0.3193367004394531,
+      "min": 0.3116485595703125,
+      "max": 0.33436126708984376
+    },
+    "gc_count": 1294,
+    "forced_share": 1.0,
+    "free_ru_at_gc_median": 3.0
+  }
+]

@@ -1,0 +1,255 @@
+{
+  "pages_per_ru": 32768,
+  "phases": [
+    {
+      "phase": "000_before",
+      "host_pages": 0,
+      "gc_total": 0,
+      "gc_background": 0,
+      "gc_forced": 0,
+      "forced_share": null,
+      "lazy_deferrals": 0,
+      "free_ru_at_gc": {
+        "min": null,
+        "median": null,
+        "max": null
+      },
+      "victim_valid_ratio": {
+        "p50": null,
+        "p90": null,
+        "max": null,
+        "share_over_5pct": null
+      },
+      "copied_pages_per_gc": {
+        "mean": null,
+        "p90": null
+      },
+      "copied_pages_total": 0
+    },
+    {
+      "phase": "fill",
+      "host_pages": 6291456,
+      "gc_total": 0,
+      "gc_background": 0,
+      "gc_forced": 0,
+      "forced_share": null,
+      "lazy_deferrals": 0,
+      "free_ru_at_gc": {
+        "min": null,
+        "median": null,
+        "max": null
+      },
+      "victim_valid_ratio": {
+        "p50": null,
+        "p90": null,
+        "max": null,
+        "share_over_5pct": null
+      },
+      "copied_pages_per_gc": {
+        "mean": null,
+        "p90": null
+      },
+      "copied_pages_total": 0
+    },
+    {
+      "phase": "pre_01",
+      "host_pages": 7864320,
+      "gc_total": 175,
+      "gc_background": 0,
+      "gc_forced": 175,
+      "forced_share": 1.0,
+      "lazy_deferrals": 1572865,
+      "free_ru_at_gc": {
+        "min": 2,
+        "median": 3,
+        "max": 3
+      },
+      "victim_valid_ratio": {
+        "p50": 0.813934326171875,
+        "p90": 0.855865478515625,
+        "max": 0.871429443359375,
+        "share_over_5pct": 1.0
+      },
+      "copied_pages_per_gc": {
+        "mean": 26401.525714285715,
+        "p90": 28045
+      },
+      "copied_pages_total": 4620267
+    },
+    {
+      "phase": "pre_02",
+      "host_pages": 9437184,
+      "gc_total": 296,
+      "gc_background": 0,
+      "gc_forced": 296,
+      "forced_share": 1.0,
+      "lazy_deferrals": 1572867,
+      "free_ru_at_gc": {
+        "min": 2,
+        "median": 3.0,
+        "max": 3
+      },
+      "victim_valid_ratio": {
+        "p50": 0.878997802734375,
+        "p90": 0.898468017578125,
+        "max": 0.905853271484375,
+        "share_over_5pct": 1.0
+      },
+      "copied_pages_per_gc": {
+        "mean": 27417.449324324323,
+        "p90": 29441
+      },
+      "copied_pages_total": 8115565
+    },
+    {
+      "phase": "pre_03",
+      "host_pages": 11010048,
+      "gc_total": 318,
+      "gc_background": 0,
+      "gc_forced": 318,
+      "forced_share": 1.0,
+      "lazy_deferrals": 1572867,
+      "free_ru_at_gc": {
+        "min": 3,
+        "median": 3.0,
+        "max": 3
+      },
+      "victim_valid_ratio": {
+        "p50": 0.8841552734375,
+        "p90": 0.8975830078125,
+        "max": 0.90972900390625,
+        "share_over_5pct": 1.0
+      },
+      "copied_pages_per_gc": {
+        "mean": 27828.14150943396,
+        "p90": 29412
+      },
+      "copied_pages_total": 8849349
+    },
+    {
+      "phase": "pre_04",
+      "host_pages": 12582912,
+      "gc_total": 334,
+      "gc_background": 0,
+      "gc_forced": 334,
+      "forced_share": 1.0,
+      "lazy_deferrals": 1572867,
+      "free_ru_at_gc": {
+        "min": 3,
+        "median": 3.0,
+        "max": 3
+      },
+      "victim_valid_ratio": {
+        "p50": 0.884735107421875,
+        "p90": 0.900482177734375,
+        "max": 0.9140625,
+        "share_over_5pct": 1.0
+      },
+      "copied_pages_per_gc": {
+        "mean": 28051.146706586827,
+        "p90": 29507
+      },
+      "copied_pages_total": 9369083
+    },
+    {
+      "phase": "pre_05",
+      "host_pages": 14155776,
+      "gc_total": 328,
+      "gc_background": 0,
+      "gc_forced": 328,
+      "forced_share": 1.0,
+      "lazy_deferrals": 1572867,
+      "free_ru_at_gc": {
+        "min": 3,
+        "median": 3.0,
+        "max": 3
+      },
+      "victim_valid_ratio": {
+        "p50": 0.883941650390625,
+        "p90": 0.90118408203125,
+        "max": 0.91119384765625,
+        "share_over_5pct": 1.0
+      },
+      "copied_pages_per_gc": {
+        "mean": 27972.75,
+        "p90": 29530
+      },
+      "copied_pages_total": 9175062
+    },
+    {
+      "phase": "pre_06",
+      "host_pages": 15728640,
+      "gc_total": 332,
+      "gc_background": 0,
+      "gc_forced": 332,
+      "forced_share": 1.0,
+      "lazy_deferrals": 1572867,
+      "free_ru_at_gc": {
+        "min": 3,
+        "median": 3.0,
+        "max": 3
+      },
+      "victim_valid_ratio": {
+        "p50": 0.884307861328125,
+        "p90": 0.898651123046875,
+        "max": 0.90826416015625,
+        "share_over_5pct": 1.0
+      },
+      "copied_pages_per_gc": {
+        "mean": 27997.189759036144,
+        "p90": 29447
+      },
+      "copied_pages_total": 9295067
+    },
+    {
+      "phase": "pre_07",
+      "host_pages": 17301504,
+      "gc_total": 319,
+      "gc_background": 0,
+      "gc_forced": 319,
+      "forced_share": 1.0,
+      "lazy_deferrals": 1572867,
+      "free_ru_at_gc": {
+        "min": 3,
+        "median": 3,
+        "max": 3
+      },
+      "victim_valid_ratio": {
+        "p50": 0.879913330078125,
+        "p90": 0.895782470703125,
+        "max": 0.905426025390625,
+        "share_over_5pct": 1.0
+      },
+      "copied_pages_per_gc": {
+        "mean": 27884.05329153605,
+        "p90": 29353
+      },
+      "copied_pages_total": 8895013
+    },
+    {
+      "phase": "pre_08",
+      "host_pages": 18874368,
+      "gc_total": 315,
+      "gc_background": 0,
+      "gc_forced": 315,
+      "forced_share": 1.0,
+      "lazy_deferrals": 1572867,
+      "free_ru_at_gc": {
+        "min": 3,
+        "median": 3,
+        "max": 3
+      },
+      "victim_valid_ratio": {
+        "p50": 0.879058837890625,
+        "p90": 0.895477294921875,
+        "max": 0.906463623046875,
+        "share_over_5pct": 1.0
+      },
+      "copied_pages_per_gc": {
+        "mean": 27770.244444444445,
+        "p90": 29343
+      },
+      "copied_pages_total": 8747627
+    }
+  ]
+}
