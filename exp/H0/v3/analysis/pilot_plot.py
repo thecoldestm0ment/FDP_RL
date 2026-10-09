@@ -54,6 +54,7 @@ def main() -> None:
         p.add_argument(f"--{name}", type=Path, required=True)
     p.add_argument("--aa", type=Path)
     p.add_argument("--out", type=Path, required=True)
+    p.add_argument("--label", default="pilot", help="run set name for the subtitle")
     a = p.parse_args()
     base = analyze(a.redirect)
     bx, by = cumulative(base)
@@ -92,7 +93,7 @@ def main() -> None:
            f'<rect width="{W}" height="{H}" fill="{SURFACE}"/>',
            f'<text x="{L}" y="34" font-size="18" font-weight="600" fill="{INK}">'
            f'Cumulative Media difference after shift (vs Redirect)</text>',
-           f'<text x="{L}" y="58" font-size="13" fill="{INK2}">g24 pilot, seed '
+           f'<text x="{L}" y="58" font-size="13" fill="{INK2}">g24 {a.label}, seed '
            f'{base["seed"]} · Media = NAND user + GC copy · Rewrite starts at its '
            f'intervention Media (x = 0)</text>']
     y = ymin

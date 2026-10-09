@@ -1,0 +1,47 @@
+[
+  {
+    "seed": 42,
+    "same_pre_state": true,
+    "pre_waf_last_1x": 7.369076410929362,
+    "post_media_per_app_stale": 7.7645754019419355,
+    "post_media_per_app_redirect": 7.583134929339091,
+    "post_media_per_app_rewrite": 7.4872731765111284,
+    "rewrite_total_media_per_app": 7.94692075252533,
+    "intervention_media_GiB": 44.12616729736328,
+    "intervention_s": 171.973612194,
+    "stale_minus_redirect_GiB": 17.418285369873047,
+    "rewrite_minus_redirect_GiB": 34.923439025878906,
+    "rewrite_post_saving_GiB": 9.202728271484375,
+    "rewrite_payback": null
+  },
+  {
+    "seed": 43,
+    "same_pre_state": true,
+    "pre_waf_last_1x": 7.453848679860433,
+    "post_media_per_app_stale": 7.759012699127197,
+    "post_media_per_app_redirect": 7.556373596191406,
+    "post_media_per_app_rewrite": 7.485388278961182,
+    "rewrite_total_media_per_app": 7.975303093592326,
+    "intervention_media_GiB": 47.031822204589844,
+    "intervention_s": 176.951923092,
+    "stale_minus_redirect_GiB": 19.453353881835938,
+    "rewrite_minus_redirect_GiB": 40.21723175048828,
+    "rewrite_post_saving_GiB": 6.8145904541015625,
+    "rewrite_payback": null
+  },
+  {
+    "seed": 44,
+    "same_pre_state": true,
+    "pre_waf_last_1x": 7.479176839192708,
+    "post_media_per_app_stale": 7.764350136121114,
+    "post_media_per_app_redirect": 7.572608947753906,
+    "post_media_per_app_rewrite": 7.490785598754883,
+    "rewrite_total_media_per_app": 7.951740821202596,
+    "intervention_media_GiB": 44.25170135498047,
+    "intervention_s": 177.923625322,
+    "stale_minus_redirect_GiB": 18.407154083251953,
+    "rewrite_minus_redirect_GiB": 36.39665985107422,
+    "rewrite_post_saving_GiB": 7.85504150390625,
+    "rewrite_payback": null
+  }
+]

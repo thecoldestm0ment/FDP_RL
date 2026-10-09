@@ -1,0 +1,233 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" font-family="system-ui, -apple-system, 'Noto Sans KR', sans-serif">
+<rect width="960" height="540" fill="#fcfcfb"/>
+<text x="84" y="34" font-size="18" font-weight="600" fill="#0b0b0b">Cumulative Media difference after shift (vs Redirect)</text>
+<text x="84" y="58" font-size="13" fill="#52514e">g24 main (QD1), seed 42 · Media = NAND user + GC copy · Rewrite starts at its intervention Media (x = 0)</text>
+<line x1="84" x2="760" y1="476.0" y2="476.0" stroke="#c3c2b7" stroke-width="1.5"/>
+<text x="74" y="480.0" font-size="12" text-anchor="end" fill="#898781">+0</text>
+<line x1="84" x2="760" y1="399.2" y2="399.2" stroke="#e1e0d9" stroke-width="1"/>
+<text x="74" y="403.2" font-size="12" text-anchor="end" fill="#898781">+10</text>
+<line x1="84" x2="760" y1="322.4" y2="322.4" stroke="#e1e0d9" stroke-width="1"/>
+<text x="74" y="326.4" font-size="12" text-anchor="end" fill="#898781">+20</text>
+<line x1="84" x2="760" y1="245.6" y2="245.6" stroke="#e1e0d9" stroke-width="1"/>
+<text x="74" y="249.6" font-size="12" text-anchor="end" fill="#898781">+30</text>
+<line x1="84" x2="760" y1="168.8" y2="168.8" stroke="#e1e0d9" stroke-width="1"/>
+<text x="74" y="172.8" font-size="12" text-anchor="end" fill="#898781">+40</text>
+<line x1="84" x2="760" y1="92.0" y2="92.0" stroke="#e1e0d9" stroke-width="1"/>
+<text x="74" y="96.0" font-size="12" text-anchor="end" fill="#898781">+50</text>
+<text x="84.0" y="498" font-size="12" text-anchor="middle" fill="#898781">0 GiB (0×)</text>
+<text x="253.0" y="498" font-size="12" text-anchor="middle" fill="#898781">24 GiB (1×)</text>
+<text x="422.0" y="498" font-size="12" text-anchor="middle" fill="#898781">48 GiB (2×)</text>
+<text x="591.0" y="498" font-size="12" text-anchor="middle" fill="#898781">72 GiB (3×)</text>
+<text x="760.0" y="498" font-size="12" text-anchor="middle" fill="#898781">96 GiB (4×)</text>
+<text x="422.0" y="526" font-size="13" text-anchor="middle" fill="#52514e">Application writes after shift (GiB, 1× = namespace)</text>
+<text transform="translate(22 284.0) rotate(-90)" font-size="13" text-anchor="middle" fill="#52514e">ΔMedia (GiB)</text>
+<polyline points="84.0,476.0 105.1,475.5 126.2,468.7 147.4,471.0 168.5,470.9 189.6,472.2 210.8,461.7 231.9,454.6 253.0,446.1 274.1,446.3 295.2,446.6 316.4,439.0 337.5,438.8 358.6,421.0 379.8,413.9 400.9,421.9 422.0,420.1 443.1,400.8 464.2,413.1 485.4,394.7 506.5,390.8 527.6,395.8 548.8,382.9 569.9,393.4 591.0,372.9 612.1,379.1 633.2,376.7 654.4,361.6 675.5,365.1 696.6,357.0 717.8,354.9 738.9,355.5 760.0,342.2" fill="none" stroke="#2a78d6" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="84.0" cy="476.0" r="7" fill="transparent"><title>Stale − Redirect
+x = 0.0 GiB
+ΔMedia = +0.00 GiB</title></circle>
+<circle cx="105.1" cy="475.5" r="7" fill="transparent"><title>Stale − Redirect
+x = 3.0 GiB
+ΔMedia = +0.07 GiB</title></circle>
+<circle cx="126.2" cy="468.7" r="7" fill="transparent"><title>Stale − Redirect
+x = 6.0 GiB
+ΔMedia = +0.95 GiB</title></circle>
+<circle cx="147.4" cy="471.0" r="7" fill="transparent"><title>Stale − Redirect
+x = 9.0 GiB
+ΔMedia = +0.66 GiB</title></circle>
+<circle cx="168.5" cy="470.9" r="7" fill="transparent"><title>Stale − Redirect
+x = 12.0 GiB
+ΔMedia = +0.66 GiB</title></circle>
+<circle cx="189.6" cy="472.2" r="7" fill="transparent"><title>Stale − Redirect
+x = 15.0 GiB
+ΔMedia = +0.50 GiB</title></circle>
+<circle cx="210.8" cy="461.7" r="7" fill="transparent"><title>Stale − Redirect
+x = 18.0 GiB
+ΔMedia = +1.86 GiB</title></circle>
+<circle cx="231.9" cy="454.6" r="7" fill="transparent"><title>Stale − Redirect
+x = 21.0 GiB
+ΔMedia = +2.78 GiB</title></circle>
+<circle cx="253.0" cy="446.1" r="7" fill="transparent"><title>Stale − Redirect
+x = 24.0 GiB
+ΔMedia = +3.89 GiB</title></circle>
+<circle cx="274.1" cy="446.3" r="7" fill="transparent"><title>Stale − Redirect
+x = 27.0 GiB
+ΔMedia = +3.87 GiB</title></circle>
+<circle cx="295.2" cy="446.6" r="7" fill="transparent"><title>Stale − Redirect
+x = 30.0 GiB
+ΔMedia = +3.83 GiB</title></circle>
+<circle cx="316.4" cy="439.0" r="7" fill="transparent"><title>Stale − Redirect
+x = 33.0 GiB
+ΔMedia = +4.82 GiB</title></circle>
+<circle cx="337.5" cy="438.8" r="7" fill="transparent"><title>Stale − Redirect
+x = 36.0 GiB
+ΔMedia = +4.84 GiB</title></circle>
+<circle cx="358.6" cy="421.0" r="7" fill="transparent"><title>Stale − Redirect
+x = 39.0 GiB
+ΔMedia = +7.16 GiB</title></circle>
+<circle cx="379.8" cy="413.9" r="7" fill="transparent"><title>Stale − Redirect
+x = 42.0 GiB
+ΔMedia = +8.09 GiB</title></circle>
+<circle cx="400.9" cy="421.9" r="7" fill="transparent"><title>Stale − Redirect
+x = 45.0 GiB
+ΔMedia = +7.05 GiB</title></circle>
+<circle cx="422.0" cy="420.1" r="7" fill="transparent"><title>Stale − Redirect
+x = 48.0 GiB
+ΔMedia = +7.28 GiB</title></circle>
+<circle cx="443.1" cy="400.8" r="7" fill="transparent"><title>Stale − Redirect
+x = 51.0 GiB
+ΔMedia = +9.80 GiB</title></circle>
+<circle cx="464.2" cy="413.1" r="7" fill="transparent"><title>Stale − Redirect
+x = 54.0 GiB
+ΔMedia = +8.19 GiB</title></circle>
+<circle cx="485.4" cy="394.7" r="7" fill="transparent"><title>Stale − Redirect
+x = 57.0 GiB
+ΔMedia = +10.59 GiB</title></circle>
+<circle cx="506.5" cy="390.8" r="7" fill="transparent"><title>Stale − Redirect
+x = 60.0 GiB
+ΔMedia = +11.09 GiB</title></circle>
+<circle cx="527.6" cy="395.8" r="7" fill="transparent"><title>Stale − Redirect
+x = 63.0 GiB
+ΔMedia = +10.45 GiB</title></circle>
+<circle cx="548.8" cy="382.9" r="7" fill="transparent"><title>Stale − Redirect
+x = 66.0 GiB
+ΔMedia = +12.12 GiB</title></circle>
+<circle cx="569.9" cy="393.4" r="7" fill="transparent"><title>Stale − Redirect
+x = 69.0 GiB
+ΔMedia = +10.76 GiB</title></circle>
+<circle cx="591.0" cy="372.9" r="7" fill="transparent"><title>Stale − Redirect
+x = 72.0 GiB
+ΔMedia = +13.42 GiB</title></circle>
+<circle cx="612.1" cy="379.1" r="7" fill="transparent"><title>Stale − Redirect
+x = 75.0 GiB
+ΔMedia = +12.62 GiB</title></circle>
+<circle cx="633.2" cy="376.7" r="7" fill="transparent"><title>Stale − Redirect
+x = 78.0 GiB
+ΔMedia = +12.93 GiB</title></circle>
+<circle cx="654.4" cy="361.6" r="7" fill="transparent"><title>Stale − Redirect
+x = 81.0 GiB
+ΔMedia = +14.90 GiB</title></circle>
+<circle cx="675.5" cy="365.1" r="7" fill="transparent"><title>Stale − Redirect
+x = 84.0 GiB
+ΔMedia = +14.44 GiB</title></circle>
+<circle cx="696.6" cy="357.0" r="7" fill="transparent"><title>Stale − Redirect
+x = 87.0 GiB
+ΔMedia = +15.50 GiB</title></circle>
+<circle cx="717.8" cy="354.9" r="7" fill="transparent"><title>Stale − Redirect
+x = 90.0 GiB
+ΔMedia = +15.77 GiB</title></circle>
+<circle cx="738.9" cy="355.5" r="7" fill="transparent"><title>Stale − Redirect
+x = 93.0 GiB
+ΔMedia = +15.69 GiB</title></circle>
+<circle cx="760.0" cy="342.2" r="7" fill="transparent"><title>Stale − Redirect
+x = 96.0 GiB
+ΔMedia = +17.42 GiB</title></circle>
+<polyline points="84.0,137.1 105.1,166.0 126.2,180.2 147.4,172.4 168.5,176.2 189.6,180.7 210.8,186.3 231.9,186.3 253.0,187.0 274.1,187.9 295.2,196.6 316.4,187.6 337.5,190.9 358.6,191.3 379.8,185.8 400.9,195.5 422.0,197.0 443.1,195.2 464.2,197.0 485.4,192.9 506.5,191.1 527.6,195.9 548.8,186.4 569.9,202.3 591.0,195.2 612.1,199.7 633.2,198.9 654.4,199.0 675.5,197.4 696.6,198.7 717.8,212.0 738.9,203.0 760.0,207.8" fill="none" stroke="#eb6834" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="84.0" cy="137.1" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 0.0 GiB
+ΔMedia = +44.13 GiB</title></circle>
+<circle cx="105.1" cy="166.0" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 3.0 GiB
+ΔMedia = +40.37 GiB</title></circle>
+<circle cx="126.2" cy="180.2" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 6.0 GiB
+ΔMedia = +38.51 GiB</title></circle>
+<circle cx="147.4" cy="172.4" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 9.0 GiB
+ΔMedia = +39.53 GiB</title></circle>
+<circle cx="168.5" cy="176.2" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 12.0 GiB
+ΔMedia = +39.04 GiB</title></circle>
+<circle cx="189.6" cy="180.7" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 15.0 GiB
+ΔMedia = +38.45 GiB</title></circle>
+<circle cx="210.8" cy="186.3" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 18.0 GiB
+ΔMedia = +37.72 GiB</title></circle>
+<circle cx="231.9" cy="186.3" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 21.0 GiB
+ΔMedia = +37.72 GiB</title></circle>
+<circle cx="253.0" cy="187.0" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 24.0 GiB
+ΔMedia = +37.63 GiB</title></circle>
+<circle cx="274.1" cy="187.9" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 27.0 GiB
+ΔMedia = +37.52 GiB</title></circle>
+<circle cx="295.2" cy="196.6" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 30.0 GiB
+ΔMedia = +36.38 GiB</title></circle>
+<circle cx="316.4" cy="187.6" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 33.0 GiB
+ΔMedia = +37.55 GiB</title></circle>
+<circle cx="337.5" cy="190.9" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 36.0 GiB
+ΔMedia = +37.12 GiB</title></circle>
+<circle cx="358.6" cy="191.3" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 39.0 GiB
+ΔMedia = +37.07 GiB</title></circle>
+<circle cx="379.8" cy="185.8" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 42.0 GiB
+ΔMedia = +37.78 GiB</title></circle>
+<circle cx="400.9" cy="195.5" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 45.0 GiB
+ΔMedia = +36.52 GiB</title></circle>
+<circle cx="422.0" cy="197.0" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 48.0 GiB
+ΔMedia = +36.32 GiB</title></circle>
+<circle cx="443.1" cy="195.2" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 51.0 GiB
+ΔMedia = +36.56 GiB</title></circle>
+<circle cx="464.2" cy="197.0" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 54.0 GiB
+ΔMedia = +36.32 GiB</title></circle>
+<circle cx="485.4" cy="192.9" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 57.0 GiB
+ΔMedia = +36.86 GiB</title></circle>
+<circle cx="506.5" cy="191.1" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 60.0 GiB
+ΔMedia = +37.09 GiB</title></circle>
+<circle cx="527.6" cy="195.9" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 63.0 GiB
+ΔMedia = +36.47 GiB</title></circle>
+<circle cx="548.8" cy="186.4" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 66.0 GiB
+ΔMedia = +37.71 GiB</title></circle>
+<circle cx="569.9" cy="202.3" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 69.0 GiB
+ΔMedia = +35.64 GiB</title></circle>
+<circle cx="591.0" cy="195.2" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 72.0 GiB
+ΔMedia = +36.57 GiB</title></circle>
+<circle cx="612.1" cy="199.7" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 75.0 GiB
+ΔMedia = +35.97 GiB</title></circle>
+<circle cx="633.2" cy="198.9" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 78.0 GiB
+ΔMedia = +36.08 GiB</title></circle>
+<circle cx="654.4" cy="199.0" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 81.0 GiB
+ΔMedia = +36.07 GiB</title></circle>
+<circle cx="675.5" cy="197.4" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 84.0 GiB
+ΔMedia = +36.28 GiB</title></circle>
+<circle cx="696.6" cy="198.7" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 87.0 GiB
+ΔMedia = +36.10 GiB</title></circle>
+<circle cx="717.8" cy="212.0" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 90.0 GiB
+ΔMedia = +34.38 GiB</title></circle>
+<circle cx="738.9" cy="203.0" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 93.0 GiB
+ΔMedia = +35.55 GiB</title></circle>
+<circle cx="760.0" cy="207.8" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 96.0 GiB
+ΔMedia = +34.92 GiB</title></circle>
+<circle cx="84.0" cy="137.1" r="4.5" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<rect x="770" y="202.8" width="10" height="10" rx="2" fill="#eb6834"/>
+<text x="786" y="211.8" font-size="12" fill="#0b0b0b">Rewrite +34.9 GiB</text>
+<rect x="770" y="337.2" width="10" height="10" rx="2" fill="#2a78d6"/>
+<text x="786" y="346.2" font-size="12" fill="#0b0b0b">Stale +17.4 GiB</text>
+<line x1="84" x2="106" y1="76" y2="76" stroke="#2a78d6" stroke-width="2"/>
+<text x="112" y="80" font-size="12" fill="#52514e">Stale − Redirect</text>
+<line x1="280" x2="302" y1="76" y2="76" stroke="#eb6834" stroke-width="2"/>
+<text x="308" y="80" font-size="12" fill="#52514e">Rewrite − Redirect</text>
+</svg>

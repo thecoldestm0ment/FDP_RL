@@ -1,0 +1,14 @@
+[FEMU] Log: FDP enabled: nruh=3, nrg=1, runs=100663296, nru=212
+[FEMU] Log: file-backed SSD buffer: /tmp/h0-v2-zram/h0-v3-main_g24_rewrite_s43_01.bin (24576 MiB)
+[FEMU] Log: FDP: CTRATT=0x80010 (ENDGRPS|FDPS), endgidmax=0
+[FEMU] Log: FDP ns init: nphs=3, ruamw=196608
+[FEMU] FTL-Log: FDP params: lines_per_ru=1, total_ru=212, runs=134217728
+[FEMU] FTL-Log: FDP: initializing reclaim groups
+[FEMU] FTL-Log: rg[0] gc threshold (90%) 21/212 RU
+[FEMU] FTL-Log: rg[0] gc threshold_high (99%) 3/212 RU
+[FEMU] FTL-Log: rg[0] gc strategy=0
+[FEMU] FTL-Log: FDP: initializing RU handles
+[FEMU] FTL-Log: FDP: ruh[0] type=2, curr_ru=0 (line=0)
+[FEMU] FTL-Log: FDP: ruh[1] type=2, curr_ru=1 (line=1)
+[FEMU] FTL-Log: FDP: ruh[2] type=2, curr_ru=2 (line=2)
+[FEMU] FTL-Log: FDP: init complete (nrg=1, nruhs=3)

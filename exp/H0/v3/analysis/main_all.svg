@@ -1,0 +1,308 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" font-family="system-ui, -apple-system, sans-serif">
+<rect width="960" height="540" fill="#fcfcfb"/>
+<text x="84" y="34" font-size="18" font-weight="600" fill="#0b0b0b">Cumulative Media difference after shift (vs Redirect)</text>
+<text x="84" y="58" font-size="13" fill="#52514e">g24 main, QD1, seeds 42, 43, 44 · thin = each seed, thick = mean · Rewrite starts at its intervention Media</text>
+<line x1="84" x2="740" y1="476.0" y2="476.0" stroke="#e1e0d9" stroke-width="1"/>
+<text x="74" y="480.0" font-size="12" text-anchor="end" fill="#898781">-10</text>
+<line x1="84" x2="740" y1="412.0" y2="412.0" stroke="#c3c2b7" stroke-width="1.5"/>
+<text x="74" y="416.0" font-size="12" text-anchor="end" fill="#898781">+0</text>
+<line x1="84" x2="740" y1="348.0" y2="348.0" stroke="#e1e0d9" stroke-width="1"/>
+<text x="74" y="352.0" font-size="12" text-anchor="end" fill="#898781">+10</text>
+<line x1="84" x2="740" y1="284.0" y2="284.0" stroke="#e1e0d9" stroke-width="1"/>
+<text x="74" y="288.0" font-size="12" text-anchor="end" fill="#898781">+20</text>
+<line x1="84" x2="740" y1="220.0" y2="220.0" stroke="#e1e0d9" stroke-width="1"/>
+<text x="74" y="224.0" font-size="12" text-anchor="end" fill="#898781">+30</text>
+<line x1="84" x2="740" y1="156.0" y2="156.0" stroke="#e1e0d9" stroke-width="1"/>
+<text x="74" y="160.0" font-size="12" text-anchor="end" fill="#898781">+40</text>
+<line x1="84" x2="740" y1="92.0" y2="92.0" stroke="#e1e0d9" stroke-width="1"/>
+<text x="74" y="96.0" font-size="12" text-anchor="end" fill="#898781">+50</text>
+<text x="84.0" y="498" font-size="12" text-anchor="middle" fill="#898781">0 GiB (0×)</text>
+<text x="248.0" y="498" font-size="12" text-anchor="middle" fill="#898781">24 GiB (1×)</text>
+<text x="412.0" y="498" font-size="12" text-anchor="middle" fill="#898781">48 GiB (2×)</text>
+<text x="576.0" y="498" font-size="12" text-anchor="middle" fill="#898781">72 GiB (3×)</text>
+<text x="740.0" y="498" font-size="12" text-anchor="middle" fill="#898781">96 GiB (4×)</text>
+<text x="412.0" y="526" font-size="13" text-anchor="middle" fill="#52514e">Application writes after shift (GiB, 1× = namespace)</text>
+<text transform="translate(22 284.0) rotate(-90)" font-size="13" text-anchor="middle" fill="#52514e">ΔMedia (GiB)</text>
+<polyline points="84.0,412.0 104.5,411.6 125.0,405.9 145.5,407.8 166.0,407.8 186.5,408.8 207.0,400.1 227.5,394.2 248.0,387.1 268.5,387.2 289.0,387.5 309.5,381.2 330.0,381.0 350.5,366.1 371.0,360.3 391.5,366.9 412.0,365.4 432.5,349.3 453.0,359.6 473.5,344.2 494.0,341.0 514.5,345.1 535.0,334.4 555.5,343.1 576.0,326.1 596.5,331.2 617.0,329.2 637.5,316.6 658.0,319.6 678.5,312.8 699.0,311.1 719.5,311.6 740.0,300.5" fill="none" stroke="#2a78d6" stroke-opacity="0.35" stroke-width="1.5"/>
+<polyline points="84.0,412.0 104.5,412.4 125.0,409.3 145.5,405.0 166.0,409.1 186.5,413.1 207.0,397.1 227.5,400.2 248.0,385.6 268.5,386.6 289.0,387.6 309.5,384.9 330.0,379.5 350.5,363.3 371.0,354.2 391.5,360.5 412.0,354.7 432.5,347.9 453.0,339.6 473.5,332.7 494.0,342.7 514.5,337.2 535.0,331.2 555.5,328.4 576.0,313.3 596.5,315.9 617.0,313.5 637.5,312.4 658.0,297.7 678.5,297.8 699.0,295.2 719.5,286.5 740.0,287.5" fill="none" stroke="#2a78d6" stroke-opacity="0.35" stroke-width="1.5"/>
+<polyline points="84.0,412.0 104.5,413.8 125.0,413.6 145.5,409.3 166.0,398.8 186.5,400.5 207.0,400.0 227.5,401.2 248.0,398.3 268.5,387.3 289.0,374.0 309.5,385.9 330.0,376.5 350.5,378.2 371.0,369.4 391.5,363.8 412.0,360.7 432.5,358.4 453.0,354.3 473.5,348.2 494.0,350.1 514.5,351.3 535.0,341.4 555.5,340.3 576.0,332.9 596.5,328.0 617.0,322.7 637.5,322.0 658.0,319.1 678.5,309.5 699.0,306.0 719.5,309.1 740.0,294.2" fill="none" stroke="#2a78d6" stroke-opacity="0.35" stroke-width="1.5"/>
+<polyline points="84.0,412.0 104.5,412.6 125.0,409.6 145.5,407.4 166.0,405.2 186.5,407.5 207.0,399.1 227.5,398.5 248.0,390.3 268.5,387.1 289.0,383.0 309.5,384.0 330.0,379.0 350.5,369.2 371.0,361.3 391.5,363.7 412.0,360.3 432.5,351.9 453.0,351.1 473.5,341.7 494.0,344.6 514.5,344.5 535.0,335.7 555.5,337.3 576.0,324.1 596.5,325.1 617.0,321.8 637.5,317.0 658.0,312.1 678.5,306.7 699.0,304.1 719.5,302.4 740.0,294.1" fill="none" stroke="#2a78d6" stroke-width="2.5" stroke-linejoin="round"/>
+<circle cx="84.0" cy="412.0" r="7" fill="transparent"><title>Stale − Redirect
+x = 0.0 GiB
+mean +0.00 GiB
+s42 +0.0, s43 +0.0, s44 +0.0</title></circle>
+<circle cx="104.5" cy="412.6" r="7" fill="transparent"><title>Stale − Redirect
+x = 3.0 GiB
+mean -0.09 GiB
+s42 +0.1, s43 -0.1, s44 -0.3</title></circle>
+<circle cx="125.0" cy="409.6" r="7" fill="transparent"><title>Stale − Redirect
+x = 6.0 GiB
+mean +0.37 GiB
+s42 +0.9, s43 +0.4, s44 -0.3</title></circle>
+<circle cx="145.5" cy="407.4" r="7" fill="transparent"><title>Stale − Redirect
+x = 9.0 GiB
+mean +0.72 GiB
+s42 +0.7, s43 +1.1, s44 +0.4</title></circle>
+<circle cx="166.0" cy="405.2" r="7" fill="transparent"><title>Stale − Redirect
+x = 12.0 GiB
+mean +1.06 GiB
+s42 +0.7, s43 +0.4, s44 +2.1</title></circle>
+<circle cx="186.5" cy="407.5" r="7" fill="transparent"><title>Stale − Redirect
+x = 15.0 GiB
+mean +0.71 GiB
+s42 +0.5, s43 -0.2, s44 +1.8</title></circle>
+<circle cx="207.0" cy="399.1" r="7" fill="transparent"><title>Stale − Redirect
+x = 18.0 GiB
+mean +2.02 GiB
+s42 +1.9, s43 +2.3, s44 +1.9</title></circle>
+<circle cx="227.5" cy="398.5" r="7" fill="transparent"><title>Stale − Redirect
+x = 21.0 GiB
+mean +2.10 GiB
+s42 +2.8, s43 +1.8, s44 +1.7</title></circle>
+<circle cx="248.0" cy="390.3" r="7" fill="transparent"><title>Stale − Redirect
+x = 24.0 GiB
+mean +3.39 GiB
+s42 +3.9, s43 +4.1, s44 +2.1</title></circle>
+<circle cx="268.5" cy="387.1" r="7" fill="transparent"><title>Stale − Redirect
+x = 27.0 GiB
+mean +3.90 GiB
+s42 +3.9, s43 +4.0, s44 +3.9</title></circle>
+<circle cx="289.0" cy="383.0" r="7" fill="transparent"><title>Stale − Redirect
+x = 30.0 GiB
+mean +4.53 GiB
+s42 +3.8, s43 +3.8, s44 +5.9</title></circle>
+<circle cx="309.5" cy="384.0" r="7" fill="transparent"><title>Stale − Redirect
+x = 33.0 GiB
+mean +4.37 GiB
+s42 +4.8, s43 +4.2, s44 +4.1</title></circle>
+<circle cx="330.0" cy="379.0" r="7" fill="transparent"><title>Stale − Redirect
+x = 36.0 GiB
+mean +5.16 GiB
+s42 +4.8, s43 +5.1, s44 +5.5</title></circle>
+<circle cx="350.5" cy="369.2" r="7" fill="transparent"><title>Stale − Redirect
+x = 39.0 GiB
+mean +6.69 GiB
+s42 +7.2, s43 +7.6, s44 +5.3</title></circle>
+<circle cx="371.0" cy="361.3" r="7" fill="transparent"><title>Stale − Redirect
+x = 42.0 GiB
+mean +7.93 GiB
+s42 +8.1, s43 +9.0, s44 +6.7</title></circle>
+<circle cx="391.5" cy="363.7" r="7" fill="transparent"><title>Stale − Redirect
+x = 45.0 GiB
+mean +7.54 GiB
+s42 +7.0, s43 +8.0, s44 +7.5</title></circle>
+<circle cx="412.0" cy="360.3" r="7" fill="transparent"><title>Stale − Redirect
+x = 48.0 GiB
+mean +8.08 GiB
+s42 +7.3, s43 +8.9, s44 +8.0</title></circle>
+<circle cx="432.5" cy="351.9" r="7" fill="transparent"><title>Stale − Redirect
+x = 51.0 GiB
+mean +9.40 GiB
+s42 +9.8, s43 +10.0, s44 +8.4</title></circle>
+<circle cx="453.0" cy="351.1" r="7" fill="transparent"><title>Stale − Redirect
+x = 54.0 GiB
+mean +9.51 GiB
+s42 +8.2, s43 +11.3, s44 +9.0</title></circle>
+<circle cx="473.5" cy="341.7" r="7" fill="transparent"><title>Stale − Redirect
+x = 57.0 GiB
+mean +10.98 GiB
+s42 +10.6, s43 +12.4, s44 +10.0</title></circle>
+<circle cx="494.0" cy="344.6" r="7" fill="transparent"><title>Stale − Redirect
+x = 60.0 GiB
+mean +10.53 GiB
+s42 +11.1, s43 +10.8, s44 +9.7</title></circle>
+<circle cx="514.5" cy="344.5" r="7" fill="transparent"><title>Stale − Redirect
+x = 63.0 GiB
+mean +10.54 GiB
+s42 +10.4, s43 +11.7, s44 +9.5</title></circle>
+<circle cx="535.0" cy="335.7" r="7" fill="transparent"><title>Stale − Redirect
+x = 66.0 GiB
+mean +11.92 GiB
+s42 +12.1, s43 +12.6, s44 +11.0</title></circle>
+<circle cx="555.5" cy="337.3" r="7" fill="transparent"><title>Stale − Redirect
+x = 69.0 GiB
+mean +11.67 GiB
+s42 +10.8, s43 +13.1, s44 +11.2</title></circle>
+<circle cx="576.0" cy="324.1" r="7" fill="transparent"><title>Stale − Redirect
+x = 72.0 GiB
+mean +13.73 GiB
+s42 +13.4, s43 +15.4, s44 +12.4</title></circle>
+<circle cx="596.5" cy="325.1" r="7" fill="transparent"><title>Stale − Redirect
+x = 75.0 GiB
+mean +13.59 GiB
+s42 +12.6, s43 +15.0, s44 +13.1</title></circle>
+<circle cx="617.0" cy="321.8" r="7" fill="transparent"><title>Stale − Redirect
+x = 78.0 GiB
+mean +14.09 GiB
+s42 +12.9, s43 +15.4, s44 +14.0</title></circle>
+<circle cx="637.5" cy="317.0" r="7" fill="transparent"><title>Stale − Redirect
+x = 81.0 GiB
+mean +14.84 GiB
+s42 +14.9, s43 +15.6, s44 +14.1</title></circle>
+<circle cx="658.0" cy="312.1" r="7" fill="transparent"><title>Stale − Redirect
+x = 84.0 GiB
+mean +15.61 GiB
+s42 +14.4, s43 +17.9, s44 +14.5</title></circle>
+<circle cx="678.5" cy="306.7" r="7" fill="transparent"><title>Stale − Redirect
+x = 87.0 GiB
+mean +16.45 GiB
+s42 +15.5, s43 +17.8, s44 +16.0</title></circle>
+<circle cx="699.0" cy="304.1" r="7" fill="transparent"><title>Stale − Redirect
+x = 90.0 GiB
+mean +16.86 GiB
+s42 +15.8, s43 +18.3, s44 +16.6</title></circle>
+<circle cx="719.5" cy="302.4" r="7" fill="transparent"><title>Stale − Redirect
+x = 93.0 GiB
+mean +17.13 GiB
+s42 +15.7, s43 +19.6, s44 +16.1</title></circle>
+<circle cx="740.0" cy="294.1" r="7" fill="transparent"><title>Stale − Redirect
+x = 96.0 GiB
+mean +18.43 GiB
+s42 +17.4, s43 +19.5, s44 +18.4</title></circle>
+<polyline points="84.0,129.6 104.5,153.6 125.0,165.5 145.5,159.0 166.0,162.2 186.5,165.9 207.0,170.6 227.5,170.6 248.0,171.1 268.5,171.9 289.0,179.2 309.5,171.7 330.0,174.4 350.5,174.7 371.0,170.2 391.5,178.2 412.0,179.5 432.5,178.0 453.0,179.5 473.5,176.1 494.0,174.6 514.5,178.6 535.0,170.7 555.5,183.9 576.0,178.0 596.5,181.8 617.0,181.1 637.5,181.2 658.0,179.8 678.5,180.9 699.0,192.0 719.5,184.5 740.0,188.5" fill="none" stroke="#eb6834" stroke-opacity="0.35" stroke-width="1.5"/>
+<polyline points="84.0,111.0 104.5,136.9 125.0,140.5 145.5,145.4 166.0,148.0 186.5,156.0 207.0,151.0 227.5,150.2 248.0,149.5 268.5,156.2 289.0,159.9 309.5,159.4 330.0,165.4 350.5,158.9 371.0,156.5 391.5,154.2 412.0,159.1 432.5,158.3 453.0,156.1 473.5,157.0 494.0,164.1 514.5,164.4 535.0,166.3 555.5,177.0 576.0,161.4 596.5,159.5 617.0,160.5 637.5,163.4 658.0,156.9 678.5,159.7 699.0,158.7 719.5,157.9 740.0,154.6" fill="none" stroke="#eb6834" stroke-opacity="0.35" stroke-width="1.5"/>
+<polyline points="84.0,128.8 104.5,163.3 125.0,169.7 145.5,173.3 166.0,159.7 186.5,170.9 207.0,177.2 227.5,173.8 248.0,178.0 268.5,173.1 289.0,168.4 309.5,174.4 330.0,168.4 350.5,177.8 371.0,181.9 391.5,183.0 412.0,174.9 432.5,171.3 453.0,172.8 473.5,171.3 494.0,177.6 514.5,174.8 535.0,176.6 555.5,175.1 576.0,180.1 596.5,175.1 617.0,169.8 637.5,175.2 658.0,181.9 678.5,174.1 699.0,176.6 719.5,184.1 740.0,179.1" fill="none" stroke="#eb6834" stroke-opacity="0.35" stroke-width="1.5"/>
+<polyline points="84.0,123.1 104.5,151.3 125.0,158.6 145.5,159.2 166.0,156.6 186.5,164.3 207.0,166.2 227.5,164.9 248.0,166.2 268.5,167.1 289.0,169.2 309.5,168.5 330.0,169.4 350.5,170.5 371.0,169.5 391.5,171.8 412.0,171.2 432.5,169.2 453.0,169.5 473.5,168.1 494.0,172.1 514.5,172.6 535.0,171.2 555.5,178.7 576.0,173.1 596.5,172.1 617.0,170.4 637.5,173.2 658.0,172.9 678.5,171.6 699.0,175.7 719.5,175.5 740.0,174.1" fill="none" stroke="#eb6834" stroke-width="2.5" stroke-linejoin="round"/>
+<circle cx="84.0" cy="123.1" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 0.0 GiB
+mean +45.14 GiB
+s42 +44.1, s43 +47.0, s44 +44.3</title></circle>
+<circle cx="104.5" cy="151.3" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 3.0 GiB
+mean +40.73 GiB
+s42 +40.4, s43 +43.0, s44 +38.9</title></circle>
+<circle cx="125.0" cy="158.6" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 6.0 GiB
+mean +39.59 GiB
+s42 +38.5, s43 +42.4, s44 +37.9</title></circle>
+<circle cx="145.5" cy="159.2" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 9.0 GiB
+mean +39.49 GiB
+s42 +39.5, s43 +41.7, s44 +37.3</title></circle>
+<circle cx="166.0" cy="156.6" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 12.0 GiB
+mean +39.90 GiB
+s42 +39.0, s43 +41.3, s44 +39.4</title></circle>
+<circle cx="186.5" cy="164.3" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 15.0 GiB
+mean +38.71 GiB
+s42 +38.5, s43 +40.0, s44 +37.7</title></circle>
+<circle cx="207.0" cy="166.2" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 18.0 GiB
+mean +38.40 GiB
+s42 +37.7, s43 +40.8, s44 +36.7</title></circle>
+<circle cx="227.5" cy="164.9" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 21.0 GiB
+mean +38.61 GiB
+s42 +37.7, s43 +40.9, s44 +37.2</title></circle>
+<circle cx="248.0" cy="166.2" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 24.0 GiB
+mean +38.40 GiB
+s42 +37.6, s43 +41.0, s44 +36.6</title></circle>
+<circle cx="268.5" cy="167.1" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 27.0 GiB
+mean +38.27 GiB
+s42 +37.5, s43 +40.0, s44 +37.3</title></circle>
+<circle cx="289.0" cy="169.2" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 30.0 GiB
+mean +37.94 GiB
+s42 +36.4, s43 +39.4, s44 +38.1</title></circle>
+<circle cx="309.5" cy="168.5" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 33.0 GiB
+mean +38.05 GiB
+s42 +37.5, s43 +39.5, s44 +37.1</title></circle>
+<circle cx="330.0" cy="169.4" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 36.0 GiB
+mean +37.90 GiB
+s42 +37.1, s43 +38.5, s44 +38.1</title></circle>
+<circle cx="350.5" cy="170.5" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 39.0 GiB
+mean +37.74 GiB
+s42 +37.1, s43 +39.5, s44 +36.6</title></circle>
+<circle cx="371.0" cy="169.5" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 42.0 GiB
+mean +37.89 GiB
+s42 +37.8, s43 +39.9, s44 +36.0</title></circle>
+<circle cx="391.5" cy="171.8" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 45.0 GiB
+mean +37.53 GiB
+s42 +36.5, s43 +40.3, s44 +35.8</title></circle>
+<circle cx="412.0" cy="171.2" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 48.0 GiB
+mean +37.63 GiB
+s42 +36.3, s43 +39.5, s44 +37.1</title></circle>
+<circle cx="432.5" cy="169.2" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 51.0 GiB
+mean +37.93 GiB
+s42 +36.6, s43 +39.6, s44 +37.6</title></circle>
+<circle cx="453.0" cy="169.5" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 54.0 GiB
+mean +37.89 GiB
+s42 +36.3, s43 +40.0, s44 +37.4</title></circle>
+<circle cx="473.5" cy="168.1" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 57.0 GiB
+mean +38.11 GiB
+s42 +36.9, s43 +39.8, s44 +37.6</title></circle>
+<circle cx="494.0" cy="172.1" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 60.0 GiB
+mean +37.48 GiB
+s42 +37.1, s43 +38.7, s44 +36.6</title></circle>
+<circle cx="514.5" cy="172.6" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 63.0 GiB
+mean +37.41 GiB
+s42 +36.5, s43 +38.7, s44 +37.1</title></circle>
+<circle cx="535.0" cy="171.2" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 66.0 GiB
+mean +37.63 GiB
+s42 +37.7, s43 +38.4, s44 +36.8</title></circle>
+<circle cx="555.5" cy="178.7" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 69.0 GiB
+mean +36.46 GiB
+s42 +35.6, s43 +36.7, s44 +37.0</title></circle>
+<circle cx="576.0" cy="173.1" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 72.0 GiB
+mean +37.32 GiB
+s42 +36.6, s43 +39.2, s44 +36.2</title></circle>
+<circle cx="596.5" cy="172.1" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 75.0 GiB
+mean +37.48 GiB
+s42 +36.0, s43 +39.4, s44 +37.0</title></circle>
+<circle cx="617.0" cy="170.4" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 78.0 GiB
+mean +37.74 GiB
+s42 +36.1, s43 +39.3, s44 +37.9</title></circle>
+<circle cx="637.5" cy="173.2" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 81.0 GiB
+mean +37.31 GiB
+s42 +36.1, s43 +38.9, s44 +37.0</title></circle>
+<circle cx="658.0" cy="172.9" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 84.0 GiB
+mean +37.36 GiB
+s42 +36.3, s43 +39.9, s44 +36.0</title></circle>
+<circle cx="678.5" cy="171.6" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 87.0 GiB
+mean +37.57 GiB
+s42 +36.1, s43 +39.4, s44 +37.2</title></circle>
+<circle cx="699.0" cy="175.7" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 90.0 GiB
+mean +36.91 GiB
+s42 +34.4, s43 +39.6, s44 +36.8</title></circle>
+<circle cx="719.5" cy="175.5" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 93.0 GiB
+mean +36.95 GiB
+s42 +35.5, s43 +39.7, s44 +35.6</title></circle>
+<circle cx="740.0" cy="174.1" r="7" fill="transparent"><title>Rewrite − Redirect
+x = 96.0 GiB
+mean +37.18 GiB
+s42 +34.9, s43 +40.2, s44 +36.4</title></circle>
+<rect x="750" y="169.1" width="10" height="10" rx="2" fill="#eb6834"/>
+<text x="766" y="178.1" font-size="12" fill="#0b0b0b">Rewrite +37.2 GiB</text>
+<text x="766" y="194.1" font-size="11" fill="#898781">seeds +34.9 … +40.2</text>
+<rect x="750" y="289.1" width="10" height="10" rx="2" fill="#2a78d6"/>
+<text x="766" y="298.1" font-size="12" fill="#0b0b0b">Stale +18.4 GiB</text>
+<text x="766" y="314.1" font-size="11" fill="#898781">seeds +17.4 … +19.5</text>
+<line x1="84" x2="106" y1="76" y2="76" stroke="#2a78d6" stroke-width="2.5"/>
+<text x="112" y="80" font-size="12" fill="#52514e">Stale − Redirect</text>
+<line x1="280" x2="302" y1="76" y2="76" stroke="#eb6834" stroke-width="2.5"/>
+<text x="308" y="80" font-size="12" fill="#52514e">Rewrite − Redirect</text>
+</svg>

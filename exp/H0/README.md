@@ -6,6 +6,9 @@
 - 실행: `python3 exp/H0/v3/code/run_vm.py --geometry ... --policy ... --result-dir exp/H0/v3/runs/<name>`
 - 분석: `analysis/` (`long_compare.txt`, `pilot_summary.txt`, `pilot_cumdiff.png`)
 - runs: `smoke_*` → `pilot_g24_*` → `long_g12_01`, `long_g24_01`
+- 생성기 난수 결함 수정 (10/9) 이후 `smoke_g24_fixgen_s42_01` → 본 실험 `main_g24_{stale,redirect,rewrite}_s{42,43,44}_01` (QD1, latency-off)
+- 본 실험 캠페인: `code/campaign_main.sh`, 로그 `_ops/campaign_main.log`, 종합 결과 `analysis/main_all.{txt,png,svg,csv}`
+- 이전 smoke·long·pilot은 결함 있는 생성기로 나온 결과라 workload 해석에 쓰지 않음
 
 ## v2 (완료, H1 기준 데이터)
 

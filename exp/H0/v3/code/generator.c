@@ -151,7 +151,11 @@ static struct options parse(int argc, char **argv)
 static void request(const struct options *o, uint64_t ordinal,
                     uint64_t *lpn, uint8_t *region, uint16_t *pid)
 {
-    uint64_t r = mix(o->seed ^ ordinal);
+    /* A 64-bit stream key per (phase, seed), then a counter. mix(seed ^ ordinal)
+     * gave every chunk the same draws: chunk seeds are below 2^18 and chunk
+     * sizes are multiples of 2^18, so XOR only permuted one shared set. */
+    uint64_t key = mix(o->seed ^ ((uint64_t)(uint8_t)o->phase[0] << 56));
+    uint64_t r = mix(key + ordinal);
     uint64_t units = o->pages * (BS / phase_bs(o->phase));
     uint64_t a = units / 3, b = a, c = a;
     if (!strcmp(o->phase, "fill")) {

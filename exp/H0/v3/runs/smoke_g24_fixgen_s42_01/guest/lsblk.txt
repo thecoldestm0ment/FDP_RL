@@ -1,0 +1,9 @@
+NAME    TYPE        SIZE FSTYPE  MOUNTPOINT
+fd0     disk        4096         
+sda     disk 21474836480         
+├─sda1  part 20400029184 ext4    /
+├─sda14 part     4194304         
+├─sda15 part   111149056 vfat    /boot/efi
+└─sda16 part   957350400 ext4    /boot
+sr0     rom       374784 iso9660 
+nvme0n1 disk 25769803776         

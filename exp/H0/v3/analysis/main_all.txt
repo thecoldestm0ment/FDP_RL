@@ -1,0 +1,13 @@
+metric                               s42       s43       s44      mean          min..max
+pre_waf_last_1x                    7.369     7.454     7.479     7.434    7.369..7.479
+post_media_per_app_stale           7.765     7.759     7.764     7.763    7.759..7.765
+post_media_per_app_redirect        7.583     7.556     7.573     7.571    7.556..7.583
+post_media_per_app_rewrite         7.487     7.485     7.491     7.488    7.485..7.491
+rewrite_total_media_per_app        7.947     7.975     7.952     7.958    7.947..7.975
+intervention_media_GiB            44.126    47.032    44.252    45.137   44.126..47.032
+intervention_s                   171.974   176.952   177.924   175.616  171.974..177.924
+stale_minus_redirect_GiB          17.418    19.453    18.407    18.426   17.418..19.453
+rewrite_minus_redirect_GiB        34.923    40.217    36.397    37.179   34.923..40.217
+rewrite_post_saving_GiB            9.203     6.815     7.855     7.957    6.815..9.203
+same_pre_state                      True      True      True
+rewrite_payback (<= 4x)             None      None      None
