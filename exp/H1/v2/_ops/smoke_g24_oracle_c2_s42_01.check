@@ -1,0 +1,5 @@
+smoke_g24_oracle_c2_s42_01: oracle_rewrite at 2, seed 42, baseline verify_ref_g24_late_rewrite_s42_emberygram
+  ok   FTL state = baseline at all 4 snapshots through pre_02
+  ok   application LBA stream = baseline in all 7 chunks
+  ok   rewrite moved 1151092 blocks (54.9% of B); PID1 B before 2097152, after 946060
+H1V2_CHECK_PASS

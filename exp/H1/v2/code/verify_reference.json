@@ -1,0 +1,17 @@
+{
+  "run": "verify_ref_g24_late_rewrite_s42_emberygram",
+  "host": "emberygram (H0 v3 PC)",
+  "qemu_sha256": "636a5585190baf92cbe350385038d3934534bdf4e01cc7fb9bad93c792213bd3",
+  "generator_source_sha256": "eca803829ce8f3c0862f3cac240c9260da3fd318b33d7266cf60c629ad1e3fb9",
+  "states": {
+    "000_before": "38d54d64c5aa5d54",
+    "fill": "3e8b12df1841e455",
+    "pre_01": "aae33ad1cb48f244",
+    "pre_02": "d0a2fc05abc626d1",
+    "post_01": "d219ac70e79af2d1",
+    "post_02": "b13f03aeb0a793b2",
+    "rewrite": "7a0f25de920892e1",
+    "post_03": "dc0423894c018308",
+    "post_04": "539802d955c93535"
+  }
+}

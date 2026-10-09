@@ -147,13 +147,17 @@ void fdp_h0_trace_state(struct ssd *ssd)
     counter_hash = h0_hash_u64(counter_hash, ssd->nand_write_pages);
     counter_hash = h0_hash_u64(counter_hash, ssd->gc_write_pages);
     /* H1-B diagnostic: inspect the current L2P owner RUH at drained flushes.
-     * The fixed rewrite target is the same seed-42 permutation as H0-B. */
+     * The fixed rewrite target is the same seed-42 permutation as H0-B.
+     * With FEMU_H0_THIRDS (H1 v2) B is the middle third and target_* is
+     * unused (0): v2 rewrites the B blocks not overwritten since the shift,
+     * which all_stale counts. */
     if (g_getenv("FEMU_H1_STALE") != NULL) {
         NvmeNamespace *ns = &ssd->n->namespaces[0];
         uint64_t exposed = ns->size / (ssd->sp.secsz * ssd->sp.secs_per_pg);
-        uint64_t b_start = exposed / 4;
-        uint64_t b_pages = exposed / 4;
-        uint64_t target_count = b_pages / 4;
+        bool thirds = g_getenv("FEMU_H0_THIRDS") != NULL;
+        uint64_t b_start = thirds ? exposed / 3 : exposed / 4;
+        uint64_t b_pages = thirds ? exposed / 3 : exposed / 4;
+        uint64_t target_count = thirds ? 0 : b_pages / 4;
         uint64_t all[4] = { 0 }, target[4] = { 0 };
         uint8_t *selected = g_new0(uint8_t, b_pages);
         uint64_t target_hash = UINT64_C(14695981039346656037);
