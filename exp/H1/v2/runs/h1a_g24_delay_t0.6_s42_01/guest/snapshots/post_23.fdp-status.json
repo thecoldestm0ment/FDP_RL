@@ -1,0 +1,23 @@
+{
+  "nruhsd":3,
+  "ruhss":[
+    {
+      "pid":0,
+      "ruhid":0,
+      "earutr":0,
+      "ruamw":255648
+    },
+    {
+      "pid":1,
+      "ruhid":1,
+      "earutr":0,
+      "ruamw":47656
+    },
+    {
+      "pid":2,
+      "ruhid":2,
+      "earutr":0,
+      "ruamw":220984
+    }
+  ]
+}

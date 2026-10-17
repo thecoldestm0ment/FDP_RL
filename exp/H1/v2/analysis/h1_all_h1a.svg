@@ -1,0 +1,571 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" font-family="system-ui, -apple-system, sans-serif">
+<rect width="960" height="560" fill="#fcfcfb"/>
+<text x="84" y="34" font-size="18" font-weight="600" fill="#0b0b0b">H1-a: cost of delaying the redirect</text>
+<text x="84" y="58" font-size="13" fill="#52514e">g24, QD1, mean of seeds 42, 43, 44 · vs Redirect (0 line) · dot = switch / rewrite point</text>
+<text transform="translate(22 294.0) rotate(-90)" font-size="13" text-anchor="middle" fill="#52514e">ΔMedia (GiB)</text>
+<line x1="84" x2="730" y1="496.0" y2="496.0" stroke="#e1e0d9" stroke-width="1"/>
+<text x="74" y="500.0" font-size="12" text-anchor="end" fill="#898781">-5</text>
+<line x1="84" x2="730" y1="415.2" y2="415.2" stroke="#c3c2b7" stroke-width="1.5"/>
+<text x="74" y="419.2" font-size="12" text-anchor="end" fill="#898781">+0</text>
+<line x1="84" x2="730" y1="334.4" y2="334.4" stroke="#e1e0d9" stroke-width="1"/>
+<text x="74" y="338.4" font-size="12" text-anchor="end" fill="#898781">+5</text>
+<line x1="84" x2="730" y1="253.6" y2="253.6" stroke="#e1e0d9" stroke-width="1"/>
+<text x="74" y="257.6" font-size="12" text-anchor="end" fill="#898781">+10</text>
+<line x1="84" x2="730" y1="172.8" y2="172.8" stroke="#e1e0d9" stroke-width="1"/>
+<text x="74" y="176.8" font-size="12" text-anchor="end" fill="#898781">+15</text>
+<line x1="84" x2="730" y1="92.0" y2="92.0" stroke="#e1e0d9" stroke-width="1"/>
+<text x="74" y="96.0" font-size="12" text-anchor="end" fill="#898781">+20</text>
+<text x="84.0" y="518" font-size="12" text-anchor="middle" fill="#898781">0 GiB (0×)</text>
+<text x="245.5" y="518" font-size="12" text-anchor="middle" fill="#898781">24 GiB (1×)</text>
+<text x="407.0" y="518" font-size="12" text-anchor="middle" fill="#898781">48 GiB (2×)</text>
+<text x="568.5" y="518" font-size="12" text-anchor="middle" fill="#898781">72 GiB (3×)</text>
+<text x="730.0" y="518" font-size="12" text-anchor="middle" fill="#898781">96 GiB (4×)</text>
+<text x="407.0" y="546" font-size="13" text-anchor="middle" fill="#52514e">Application writes after shift (GiB, 1× = namespace, 0.125× = τ 0.3)</text>
+<polyline points="84.0,415.2 104.2,416.7 124.4,409.2 144.6,403.5 164.8,398.1 184.9,403.8 205.1,382.6 225.3,381.2 245.5,360.5 265.7,352.2 285.9,342.1 306.1,344.6 326.2,331.9 346.4,307.2 366.6,287.1 386.8,293.3 407.0,284.6 427.2,263.3 447.4,261.5 467.6,237.7 487.8,245.0 507.9,244.8 528.1,222.5 548.3,226.6 568.5,193.2 588.7,195.7 608.9,187.5 629.1,175.4 649.2,163.0 669.4,149.3 689.6,142.7 709.8,138.4 730.0,117.4" fill="none" stroke="#52514e" stroke-width="2.5" stroke-linejoin="round" stroke-dasharray="6 5"/>
+<circle cx="84.0" cy="415.2" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 0.0 GiB
+mean +0.00 GiB
+s42 +0.0, s43 +0.0, s44 +0.0</title></circle>
+<circle cx="104.2" cy="416.7" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 3.0 GiB
+mean -0.09 GiB
+s42 +0.1, s43 -0.1, s44 -0.3</title></circle>
+<circle cx="124.4" cy="409.2" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 6.0 GiB
+mean +0.37 GiB
+s42 +0.9, s43 +0.4, s44 -0.3</title></circle>
+<circle cx="144.6" cy="403.5" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 9.0 GiB
+mean +0.72 GiB
+s42 +0.7, s43 +1.1, s44 +0.4</title></circle>
+<circle cx="164.8" cy="398.1" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 12.0 GiB
+mean +1.06 GiB
+s42 +0.7, s43 +0.4, s44 +2.1</title></circle>
+<circle cx="184.9" cy="403.8" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 15.0 GiB
+mean +0.71 GiB
+s42 +0.5, s43 -0.2, s44 +1.8</title></circle>
+<circle cx="205.1" cy="382.6" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 18.0 GiB
+mean +2.02 GiB
+s42 +1.9, s43 +2.3, s44 +1.9</title></circle>
+<circle cx="225.3" cy="381.2" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 21.0 GiB
+mean +2.10 GiB
+s42 +2.8, s43 +1.8, s44 +1.7</title></circle>
+<circle cx="245.5" cy="360.5" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 24.0 GiB
+mean +3.39 GiB
+s42 +3.9, s43 +4.1, s44 +2.1</title></circle>
+<circle cx="265.7" cy="352.2" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 27.0 GiB
+mean +3.90 GiB
+s42 +3.9, s43 +4.0, s44 +3.9</title></circle>
+<circle cx="285.9" cy="342.1" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 30.0 GiB
+mean +4.53 GiB
+s42 +3.8, s43 +3.8, s44 +5.9</title></circle>
+<circle cx="306.1" cy="344.6" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 33.0 GiB
+mean +4.37 GiB
+s42 +4.8, s43 +4.2, s44 +4.1</title></circle>
+<circle cx="326.2" cy="331.9" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 36.0 GiB
+mean +5.16 GiB
+s42 +4.8, s43 +5.1, s44 +5.5</title></circle>
+<circle cx="346.4" cy="307.2" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 39.0 GiB
+mean +6.69 GiB
+s42 +7.2, s43 +7.6, s44 +5.3</title></circle>
+<circle cx="366.6" cy="287.1" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 42.0 GiB
+mean +7.93 GiB
+s42 +8.1, s43 +9.0, s44 +6.7</title></circle>
+<circle cx="386.8" cy="293.3" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 45.0 GiB
+mean +7.54 GiB
+s42 +7.0, s43 +8.0, s44 +7.5</title></circle>
+<circle cx="407.0" cy="284.6" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 48.0 GiB
+mean +8.08 GiB
+s42 +7.3, s43 +8.9, s44 +8.0</title></circle>
+<circle cx="427.2" cy="263.3" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 51.0 GiB
+mean +9.40 GiB
+s42 +9.8, s43 +10.0, s44 +8.4</title></circle>
+<circle cx="447.4" cy="261.5" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 54.0 GiB
+mean +9.51 GiB
+s42 +8.2, s43 +11.3, s44 +9.0</title></circle>
+<circle cx="467.6" cy="237.7" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 57.0 GiB
+mean +10.98 GiB
+s42 +10.6, s43 +12.4, s44 +10.0</title></circle>
+<circle cx="487.8" cy="245.0" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 60.0 GiB
+mean +10.53 GiB
+s42 +11.1, s43 +10.8, s44 +9.7</title></circle>
+<circle cx="507.9" cy="244.8" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 63.0 GiB
+mean +10.54 GiB
+s42 +10.4, s43 +11.7, s44 +9.5</title></circle>
+<circle cx="528.1" cy="222.5" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 66.0 GiB
+mean +11.92 GiB
+s42 +12.1, s43 +12.6, s44 +11.0</title></circle>
+<circle cx="548.3" cy="226.6" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 69.0 GiB
+mean +11.67 GiB
+s42 +10.8, s43 +13.1, s44 +11.2</title></circle>
+<circle cx="568.5" cy="193.2" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 72.0 GiB
+mean +13.73 GiB
+s42 +13.4, s43 +15.4, s44 +12.4</title></circle>
+<circle cx="588.7" cy="195.7" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 75.0 GiB
+mean +13.59 GiB
+s42 +12.6, s43 +15.0, s44 +13.1</title></circle>
+<circle cx="608.9" cy="187.5" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 78.0 GiB
+mean +14.09 GiB
+s42 +12.9, s43 +15.4, s44 +14.0</title></circle>
+<circle cx="629.1" cy="175.4" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 81.0 GiB
+mean +14.84 GiB
+s42 +14.9, s43 +15.6, s44 +14.1</title></circle>
+<circle cx="649.2" cy="163.0" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 84.0 GiB
+mean +15.61 GiB
+s42 +14.4, s43 +17.9, s44 +14.5</title></circle>
+<circle cx="669.4" cy="149.3" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 87.0 GiB
+mean +16.45 GiB
+s42 +15.5, s43 +17.8, s44 +16.0</title></circle>
+<circle cx="689.6" cy="142.7" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 90.0 GiB
+mean +16.86 GiB
+s42 +15.8, s43 +18.3, s44 +16.6</title></circle>
+<circle cx="709.8" cy="138.4" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 93.0 GiB
+mean +17.13 GiB
+s42 +15.7, s43 +19.6, s44 +16.1</title></circle>
+<circle cx="730.0" cy="117.4" r="6" fill="transparent"><title>Stale (never) [H0]
+x = 96.0 GiB
+mean +18.43 GiB
+s42 +17.4, s43 +19.5, s44 +18.4</title></circle>
+<polyline points="84.0,415.2 104.2,416.7 124.4,409.2 144.6,407.3 164.8,398.6 184.9,416.6 205.1,395.6 225.3,405.7 245.5,400.1 265.7,392.1 285.9,413.8 306.1,406.9 326.2,409.9 346.4,403.9 366.6,390.5 386.8,421.3 407.0,406.4 427.2,409.8 447.4,410.5 467.6,397.8 487.8,428.5 507.9,427.6 528.1,421.5 548.3,438.2 568.5,413.1 588.7,432.6 608.9,437.3 629.1,428.8 649.2,441.2 669.4,424.2 689.6,455.3 709.8,453.2 730.0,437.0" fill="none" stroke="#6aa5e6" stroke-width="2.5" stroke-linejoin="round"/>
+<circle cx="84.0" cy="415.2" r="6" fill="transparent"><title>Delay τ=0.6
+x = 0.0 GiB
+mean +0.00 GiB
+s42 +0.0, s43 +0.0, s44 +0.0</title></circle>
+<circle cx="104.2" cy="416.7" r="6" fill="transparent"><title>Delay τ=0.6
+x = 3.0 GiB
+mean -0.09 GiB
+s42 +0.1, s43 -0.1, s44 -0.3</title></circle>
+<circle cx="124.4" cy="409.2" r="6" fill="transparent"><title>Delay τ=0.6
+x = 6.0 GiB
+mean +0.37 GiB
+s42 +0.9, s43 +0.4, s44 -0.3</title></circle>
+<circle cx="144.6" cy="407.3" r="6" fill="transparent"><title>Delay τ=0.6
+x = 9.0 GiB
+mean +0.49 GiB
+s42 +0.7, s43 -0.1, s44 +0.8</title></circle>
+<circle cx="164.8" cy="398.6" r="6" fill="transparent"><title>Delay τ=0.6
+x = 12.0 GiB
+mean +1.02 GiB
+s42 +0.9, s43 +0.1, s44 +2.0</title></circle>
+<circle cx="184.9" cy="416.6" r="6" fill="transparent"><title>Delay τ=0.6
+x = 15.0 GiB
+mean -0.09 GiB
+s42 +0.2, s43 -1.5, s44 +1.1</title></circle>
+<circle cx="205.1" cy="395.6" r="6" fill="transparent"><title>Delay τ=0.6
+x = 18.0 GiB
+mean +1.21 GiB
+s42 +1.4, s43 +1.1, s44 +1.1</title></circle>
+<circle cx="225.3" cy="405.7" r="6" fill="transparent"><title>Delay τ=0.6
+x = 21.0 GiB
+mean +0.59 GiB
+s42 +1.9, s43 +0.1, s44 -0.2</title></circle>
+<circle cx="245.5" cy="400.1" r="6" fill="transparent"><title>Delay τ=0.6
+x = 24.0 GiB
+mean +0.94 GiB
+s42 +2.0, s43 +0.6, s44 +0.2</title></circle>
+<circle cx="265.7" cy="392.1" r="6" fill="transparent"><title>Delay τ=0.6
+x = 27.0 GiB
+mean +1.43 GiB
+s42 +2.0, s43 +0.3, s44 +1.9</title></circle>
+<circle cx="285.9" cy="413.8" r="6" fill="transparent"><title>Delay τ=0.6
+x = 30.0 GiB
+mean +0.08 GiB
+s42 +0.1, s43 -0.8, s44 +0.9</title></circle>
+<circle cx="306.1" cy="406.9" r="6" fill="transparent"><title>Delay τ=0.6
+x = 33.0 GiB
+mean +0.51 GiB
+s42 +1.6, s43 +0.5, s44 -0.5</title></circle>
+<circle cx="326.2" cy="409.9" r="6" fill="transparent"><title>Delay τ=0.6
+x = 36.0 GiB
+mean +0.33 GiB
+s42 +1.1, s43 -0.6, s44 +0.5</title></circle>
+<circle cx="346.4" cy="403.9" r="6" fill="transparent"><title>Delay τ=0.6
+x = 39.0 GiB
+mean +0.70 GiB
+s42 +1.7, s43 +0.9, s44 -0.6</title></circle>
+<circle cx="366.6" cy="390.5" r="6" fill="transparent"><title>Delay τ=0.6
+x = 42.0 GiB
+mean +1.53 GiB
+s42 +2.7, s43 +1.8, s44 +0.1</title></circle>
+<circle cx="386.8" cy="421.3" r="6" fill="transparent"><title>Delay τ=0.6
+x = 45.0 GiB
+mean -0.38 GiB
+s42 +0.5, s43 -0.6, s44 -1.0</title></circle>
+<circle cx="407.0" cy="406.4" r="6" fill="transparent"><title>Delay τ=0.6
+x = 48.0 GiB
+mean +0.55 GiB
+s42 +1.5, s43 +1.6, s44 -1.5</title></circle>
+<circle cx="427.2" cy="409.8" r="6" fill="transparent"><title>Delay τ=0.6
+x = 51.0 GiB
+mean +0.33 GiB
+s42 +1.8, s43 +0.8, s44 -1.6</title></circle>
+<circle cx="447.4" cy="410.5" r="6" fill="transparent"><title>Delay τ=0.6
+x = 54.0 GiB
+mean +0.29 GiB
+s42 +0.8, s43 +1.0, s44 -0.9</title></circle>
+<circle cx="467.6" cy="397.8" r="6" fill="transparent"><title>Delay τ=0.6
+x = 57.0 GiB
+mean +1.08 GiB
+s42 +1.9, s43 +2.2, s44 -0.9</title></circle>
+<circle cx="487.8" cy="428.5" r="6" fill="transparent"><title>Delay τ=0.6
+x = 60.0 GiB
+mean -0.82 GiB
+s42 +1.2, s43 -1.1, s44 -2.6</title></circle>
+<circle cx="507.9" cy="427.6" r="6" fill="transparent"><title>Delay τ=0.6
+x = 63.0 GiB
+mean -0.77 GiB
+s42 +1.4, s43 +0.5, s44 -4.2</title></circle>
+<circle cx="528.1" cy="421.5" r="6" fill="transparent"><title>Delay τ=0.6
+x = 66.0 GiB
+mean -0.39 GiB
+s42 +1.1, s43 -0.4, s44 -1.9</title></circle>
+<circle cx="548.3" cy="438.2" r="6" fill="transparent"><title>Delay τ=0.6
+x = 69.0 GiB
+mean -1.42 GiB
+s42 +0.3, s43 -1.2, s44 -3.4</title></circle>
+<circle cx="568.5" cy="413.1" r="6" fill="transparent"><title>Delay τ=0.6
+x = 72.0 GiB
+mean +0.13 GiB
+s42 +0.5, s43 +1.8, s44 -1.9</title></circle>
+<circle cx="588.7" cy="432.6" r="6" fill="transparent"><title>Delay τ=0.6
+x = 75.0 GiB
+mean -1.08 GiB
+s42 -0.6, s43 -0.2, s44 -2.4</title></circle>
+<circle cx="608.9" cy="437.3" r="6" fill="transparent"><title>Delay τ=0.6
+x = 78.0 GiB
+mean -1.37 GiB
+s42 -0.9, s43 +0.3, s44 -3.6</title></circle>
+<circle cx="629.1" cy="428.8" r="6" fill="transparent"><title>Delay τ=0.6
+x = 81.0 GiB
+mean -0.84 GiB
+s42 -0.3, s43 -0.4, s44 -1.8</title></circle>
+<circle cx="649.2" cy="441.2" r="6" fill="transparent"><title>Delay τ=0.6
+x = 84.0 GiB
+mean -1.61 GiB
+s42 -2.1, s43 +0.5, s44 -3.2</title></circle>
+<circle cx="669.4" cy="424.2" r="6" fill="transparent"><title>Delay τ=0.6
+x = 87.0 GiB
+mean -0.56 GiB
+s42 -1.6, s43 +1.6, s44 -1.7</title></circle>
+<circle cx="689.6" cy="455.3" r="6" fill="transparent"><title>Delay τ=0.6
+x = 90.0 GiB
+mean -2.48 GiB
+s42 -3.9, s43 -0.6, s44 -3.0</title></circle>
+<circle cx="709.8" cy="453.2" r="6" fill="transparent"><title>Delay τ=0.6
+x = 93.0 GiB
+mean -2.35 GiB
+s42 -4.1, s43 +1.1, s44 -4.0</title></circle>
+<circle cx="730.0" cy="437.0" r="6" fill="transparent"><title>Delay τ=0.6
+x = 96.0 GiB
+mean -1.35 GiB
+s42 -2.2, s43 +0.7, s44 -2.5</title></circle>
+<circle cx="124.4" cy="409.2" r="4.5" fill="#6aa5e6" stroke="#fcfcfb" stroke-width="2"/>
+<polyline points="84.0,415.2 104.2,416.7 124.4,409.2 144.6,403.5 164.8,398.1 184.9,410.1 205.1,384.1 225.3,399.2 245.5,384.1 265.7,378.0 285.9,374.0 306.1,384.1 326.2,395.8 346.4,377.8 366.6,364.9 386.8,368.7 407.0,367.9 427.2,378.7 447.4,370.3 467.6,355.9 487.8,378.6 507.9,375.5 528.1,383.5 548.3,384.4 568.5,359.4 588.7,365.1 608.9,369.0 629.1,376.8 649.2,368.9 669.4,364.1 689.6,370.5 709.8,368.8 730.0,359.8" fill="none" stroke="#2a78d6" stroke-width="2.5" stroke-linejoin="round"/>
+<circle cx="84.0" cy="415.2" r="6" fill="transparent"><title>Delay τ=1.2
+x = 0.0 GiB
+mean +0.00 GiB
+s42 +0.0, s43 +0.0, s44 +0.0</title></circle>
+<circle cx="104.2" cy="416.7" r="6" fill="transparent"><title>Delay τ=1.2
+x = 3.0 GiB
+mean -0.09 GiB
+s42 +0.1, s43 -0.1, s44 -0.3</title></circle>
+<circle cx="124.4" cy="409.2" r="6" fill="transparent"><title>Delay τ=1.2
+x = 6.0 GiB
+mean +0.37 GiB
+s42 +0.9, s43 +0.4, s44 -0.3</title></circle>
+<circle cx="144.6" cy="403.5" r="6" fill="transparent"><title>Delay τ=1.2
+x = 9.0 GiB
+mean +0.72 GiB
+s42 +0.7, s43 +1.1, s44 +0.4</title></circle>
+<circle cx="164.8" cy="398.1" r="6" fill="transparent"><title>Delay τ=1.2
+x = 12.0 GiB
+mean +1.06 GiB
+s42 +0.7, s43 +0.4, s44 +2.1</title></circle>
+<circle cx="184.9" cy="410.1" r="6" fill="transparent"><title>Delay τ=1.2
+x = 15.0 GiB
+mean +0.32 GiB
+s42 +0.8, s43 -0.5, s44 +0.6</title></circle>
+<circle cx="205.1" cy="384.1" r="6" fill="transparent"><title>Delay τ=1.2
+x = 18.0 GiB
+mean +1.93 GiB
+s42 +2.0, s43 +2.2, s44 +1.6</title></circle>
+<circle cx="225.3" cy="399.2" r="6" fill="transparent"><title>Delay τ=1.2
+x = 21.0 GiB
+mean +0.99 GiB
+s42 +1.7, s43 +0.7, s44 +0.6</title></circle>
+<circle cx="245.5" cy="384.1" r="6" fill="transparent"><title>Delay τ=1.2
+x = 24.0 GiB
+mean +1.92 GiB
+s42 +1.9, s43 +2.8, s44 +1.1</title></circle>
+<circle cx="265.7" cy="378.0" r="6" fill="transparent"><title>Delay τ=1.2
+x = 27.0 GiB
+mean +2.30 GiB
+s42 +2.2, s43 +3.0, s44 +1.8</title></circle>
+<circle cx="285.9" cy="374.0" r="6" fill="transparent"><title>Delay τ=1.2
+x = 30.0 GiB
+mean +2.55 GiB
+s42 +1.9, s43 +2.1, s44 +3.6</title></circle>
+<circle cx="306.1" cy="384.1" r="6" fill="transparent"><title>Delay τ=1.2
+x = 33.0 GiB
+mean +1.93 GiB
+s42 +2.1, s43 +2.1, s44 +1.6</title></circle>
+<circle cx="326.2" cy="395.8" r="6" fill="transparent"><title>Delay τ=1.2
+x = 36.0 GiB
+mean +1.20 GiB
+s42 +0.7, s43 +1.3, s44 +1.6</title></circle>
+<circle cx="346.4" cy="377.8" r="6" fill="transparent"><title>Delay τ=1.2
+x = 39.0 GiB
+mean +2.31 GiB
+s42 +2.1, s43 +3.7, s44 +1.2</title></circle>
+<circle cx="366.6" cy="364.9" r="6" fill="transparent"><title>Delay τ=1.2
+x = 42.0 GiB
+mean +3.11 GiB
+s42 +2.4, s43 +4.8, s44 +2.1</title></circle>
+<circle cx="386.8" cy="368.7" r="6" fill="transparent"><title>Delay τ=1.2
+x = 45.0 GiB
+mean +2.88 GiB
+s42 +2.6, s43 +3.4, s44 +2.6</title></circle>
+<circle cx="407.0" cy="367.9" r="6" fill="transparent"><title>Delay τ=1.2
+x = 48.0 GiB
+mean +2.93 GiB
+s42 +1.9, s43 +4.8, s44 +2.1</title></circle>
+<circle cx="427.2" cy="378.7" r="6" fill="transparent"><title>Delay τ=1.2
+x = 51.0 GiB
+mean +2.26 GiB
+s42 +1.9, s43 +3.8, s44 +1.1</title></circle>
+<circle cx="447.4" cy="370.3" r="6" fill="transparent"><title>Delay τ=1.2
+x = 54.0 GiB
+mean +2.78 GiB
+s42 +1.2, s43 +5.5, s44 +1.7</title></circle>
+<circle cx="467.6" cy="355.9" r="6" fill="transparent"><title>Delay τ=1.2
+x = 57.0 GiB
+mean +3.67 GiB
+s42 +2.4, s43 +6.1, s44 +2.5</title></circle>
+<circle cx="487.8" cy="378.6" r="6" fill="transparent"><title>Delay τ=1.2
+x = 60.0 GiB
+mean +2.26 GiB
+s42 +2.2, s43 +3.8, s44 +0.8</title></circle>
+<circle cx="507.9" cy="375.5" r="6" fill="transparent"><title>Delay τ=1.2
+x = 63.0 GiB
+mean +2.46 GiB
+s42 +1.6, s43 +5.3, s44 +0.5</title></circle>
+<circle cx="528.1" cy="383.5" r="6" fill="transparent"><title>Delay τ=1.2
+x = 66.0 GiB
+mean +1.96 GiB
+s42 +1.3, s43 +3.7, s44 +0.8</title></circle>
+<circle cx="548.3" cy="384.4" r="6" fill="transparent"><title>Delay τ=1.2
+x = 69.0 GiB
+mean +1.90 GiB
+s42 +0.1, s43 +4.6, s44 +1.0</title></circle>
+<circle cx="568.5" cy="359.4" r="6" fill="transparent"><title>Delay τ=1.2
+x = 72.0 GiB
+mean +3.46 GiB
+s42 +1.2, s43 +7.4, s44 +1.8</title></circle>
+<circle cx="588.7" cy="365.1" r="6" fill="transparent"><title>Delay τ=1.2
+x = 75.0 GiB
+mean +3.10 GiB
+s42 +1.9, s43 +6.6, s44 +0.7</title></circle>
+<circle cx="608.9" cy="369.0" r="6" fill="transparent"><title>Delay τ=1.2
+x = 78.0 GiB
+mean +2.86 GiB
+s42 +0.5, s43 +6.2, s44 +1.8</title></circle>
+<circle cx="629.1" cy="376.8" r="6" fill="transparent"><title>Delay τ=1.2
+x = 81.0 GiB
+mean +2.37 GiB
+s42 +0.4, s43 +5.2, s44 +1.5</title></circle>
+<circle cx="649.2" cy="368.9" r="6" fill="transparent"><title>Delay τ=1.2
+x = 84.0 GiB
+mean +2.87 GiB
+s42 +0.6, s43 +7.0, s44 +1.0</title></circle>
+<circle cx="669.4" cy="364.1" r="6" fill="transparent"><title>Delay τ=1.2
+x = 87.0 GiB
+mean +3.16 GiB
+s42 +0.3, s43 +6.4, s44 +2.8</title></circle>
+<circle cx="689.6" cy="370.5" r="6" fill="transparent"><title>Delay τ=1.2
+x = 90.0 GiB
+mean +2.77 GiB
+s42 +0.1, s43 +7.5, s44 +0.7</title></circle>
+<circle cx="709.8" cy="368.8" r="6" fill="transparent"><title>Delay τ=1.2
+x = 93.0 GiB
+mean +2.87 GiB
+s42 +0.7, s43 +6.4, s44 +1.5</title></circle>
+<circle cx="730.0" cy="359.8" r="6" fill="transparent"><title>Delay τ=1.2
+x = 96.0 GiB
+mean +3.43 GiB
+s42 +1.5, s43 +6.0, s44 +2.8</title></circle>
+<circle cx="164.8" cy="398.1" r="4.5" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<polyline points="84.0,415.2 104.2,416.7 124.4,409.2 144.6,403.5 164.8,398.1 184.9,403.8 205.1,382.6 225.3,381.2 245.5,360.5 265.7,350.6 285.9,365.7 306.1,346.9 326.2,357.6 346.4,323.0 366.6,323.1 386.8,345.1 407.0,334.3 427.2,342.0 447.4,342.0 467.6,314.1 487.8,358.0 507.9,347.3 528.1,355.0 548.3,362.9 568.5,341.7 588.7,365.0 608.9,362.8 629.1,365.3 649.2,353.6 669.4,339.6 689.6,362.0 709.8,353.5 730.0,344.4" fill="none" stroke="#1b4f91" stroke-width="2.5" stroke-linejoin="round"/>
+<circle cx="84.0" cy="415.2" r="6" fill="transparent"><title>Delay τ=2.4
+x = 0.0 GiB
+mean +0.00 GiB
+s42 +0.0, s43 +0.0, s44 +0.0</title></circle>
+<circle cx="104.2" cy="416.7" r="6" fill="transparent"><title>Delay τ=2.4
+x = 3.0 GiB
+mean -0.09 GiB
+s42 +0.1, s43 -0.1, s44 -0.3</title></circle>
+<circle cx="124.4" cy="409.2" r="6" fill="transparent"><title>Delay τ=2.4
+x = 6.0 GiB
+mean +0.37 GiB
+s42 +0.9, s43 +0.4, s44 -0.3</title></circle>
+<circle cx="144.6" cy="403.5" r="6" fill="transparent"><title>Delay τ=2.4
+x = 9.0 GiB
+mean +0.72 GiB
+s42 +0.7, s43 +1.1, s44 +0.4</title></circle>
+<circle cx="164.8" cy="398.1" r="6" fill="transparent"><title>Delay τ=2.4
+x = 12.0 GiB
+mean +1.06 GiB
+s42 +0.7, s43 +0.4, s44 +2.1</title></circle>
+<circle cx="184.9" cy="403.8" r="6" fill="transparent"><title>Delay τ=2.4
+x = 15.0 GiB
+mean +0.71 GiB
+s42 +0.5, s43 -0.2, s44 +1.8</title></circle>
+<circle cx="205.1" cy="382.6" r="6" fill="transparent"><title>Delay τ=2.4
+x = 18.0 GiB
+mean +2.02 GiB
+s42 +1.9, s43 +2.3, s44 +1.9</title></circle>
+<circle cx="225.3" cy="381.2" r="6" fill="transparent"><title>Delay τ=2.4
+x = 21.0 GiB
+mean +2.10 GiB
+s42 +2.8, s43 +1.8, s44 +1.7</title></circle>
+<circle cx="245.5" cy="360.5" r="6" fill="transparent"><title>Delay τ=2.4
+x = 24.0 GiB
+mean +3.39 GiB
+s42 +3.9, s43 +4.1, s44 +2.1</title></circle>
+<circle cx="265.7" cy="350.6" r="6" fill="transparent"><title>Delay τ=2.4
+x = 27.0 GiB
+mean +4.00 GiB
+s42 +4.1, s43 +3.9, s44 +4.0</title></circle>
+<circle cx="285.9" cy="365.7" r="6" fill="transparent"><title>Delay τ=2.4
+x = 30.0 GiB
+mean +3.06 GiB
+s42 +2.7, s43 +2.3, s44 +4.2</title></circle>
+<circle cx="306.1" cy="346.9" r="6" fill="transparent"><title>Delay τ=2.4
+x = 33.0 GiB
+mean +4.22 GiB
+s42 +4.6, s43 +4.7, s44 +3.4</title></circle>
+<circle cx="326.2" cy="357.6" r="6" fill="transparent"><title>Delay τ=2.4
+x = 36.0 GiB
+mean +3.57 GiB
+s42 +2.8, s43 +3.7, s44 +4.1</title></circle>
+<circle cx="346.4" cy="323.0" r="6" fill="transparent"><title>Delay τ=2.4
+x = 39.0 GiB
+mean +5.71 GiB
+s42 +5.5, s43 +7.3, s44 +4.3</title></circle>
+<circle cx="366.6" cy="323.1" r="6" fill="transparent"><title>Delay τ=2.4
+x = 42.0 GiB
+mean +5.70 GiB
+s42 +5.8, s43 +6.7, s44 +4.6</title></circle>
+<circle cx="386.8" cy="345.1" r="6" fill="transparent"><title>Delay τ=2.4
+x = 45.0 GiB
+mean +4.34 GiB
+s42 +3.8, s43 +5.7, s44 +3.5</title></circle>
+<circle cx="407.0" cy="334.3" r="6" fill="transparent"><title>Delay τ=2.4
+x = 48.0 GiB
+mean +5.00 GiB
+s42 +3.7, s43 +7.2, s44 +4.0</title></circle>
+<circle cx="427.2" cy="342.0" r="6" fill="transparent"><title>Delay τ=2.4
+x = 51.0 GiB
+mean +4.53 GiB
+s42 +4.0, s43 +6.1, s44 +3.5</title></circle>
+<circle cx="447.4" cy="342.0" r="6" fill="transparent"><title>Delay τ=2.4
+x = 54.0 GiB
+mean +4.53 GiB
+s42 +3.2, s43 +6.6, s44 +3.8</title></circle>
+<circle cx="467.6" cy="314.1" r="6" fill="transparent"><title>Delay τ=2.4
+x = 57.0 GiB
+mean +6.26 GiB
+s42 +5.4, s43 +7.8, s44 +5.6</title></circle>
+<circle cx="487.8" cy="358.0" r="6" fill="transparent"><title>Delay τ=2.4
+x = 60.0 GiB
+mean +3.54 GiB
+s42 +3.2, s43 +4.3, s44 +3.1</title></circle>
+<circle cx="507.9" cy="347.3" r="6" fill="transparent"><title>Delay τ=2.4
+x = 63.0 GiB
+mean +4.20 GiB
+s42 +2.4, s43 +6.7, s44 +3.6</title></circle>
+<circle cx="528.1" cy="355.0" r="6" fill="transparent"><title>Delay τ=2.4
+x = 66.0 GiB
+mean +3.73 GiB
+s42 +2.9, s43 +5.0, s44 +3.3</title></circle>
+<circle cx="548.3" cy="362.9" r="6" fill="transparent"><title>Delay τ=2.4
+x = 69.0 GiB
+mean +3.23 GiB
+s42 +1.7, s43 +5.4, s44 +2.5</title></circle>
+<circle cx="568.5" cy="341.7" r="6" fill="transparent"><title>Delay τ=2.4
+x = 72.0 GiB
+mean +4.55 GiB
+s42 +2.5, s43 +7.8, s44 +3.4</title></circle>
+<circle cx="588.7" cy="365.0" r="6" fill="transparent"><title>Delay τ=2.4
+x = 75.0 GiB
+mean +3.10 GiB
+s42 +1.3, s43 +5.8, s44 +2.3</title></circle>
+<circle cx="608.9" cy="362.8" r="6" fill="transparent"><title>Delay τ=2.4
+x = 78.0 GiB
+mean +3.24 GiB
+s42 +1.0, s43 +5.9, s44 +2.8</title></circle>
+<circle cx="629.1" cy="365.3" r="6" fill="transparent"><title>Delay τ=2.4
+x = 81.0 GiB
+mean +3.08 GiB
+s42 +2.1, s43 +4.9, s44 +2.3</title></circle>
+<circle cx="649.2" cy="353.6" r="6" fill="transparent"><title>Delay τ=2.4
+x = 84.0 GiB
+mean +3.81 GiB
+s42 +1.7, s43 +6.7, s44 +3.1</title></circle>
+<circle cx="669.4" cy="339.6" r="6" fill="transparent"><title>Delay τ=2.4
+x = 87.0 GiB
+mean +4.68 GiB
+s42 +2.1, s43 +7.3, s44 +4.7</title></circle>
+<circle cx="689.6" cy="362.0" r="6" fill="transparent"><title>Delay τ=2.4
+x = 90.0 GiB
+mean +3.29 GiB
+s42 +0.6, s43 +6.2, s44 +3.1</title></circle>
+<circle cx="709.8" cy="353.5" r="6" fill="transparent"><title>Delay τ=2.4
+x = 93.0 GiB
+mean +3.82 GiB
+s42 +1.2, s43 +7.1, s44 +3.1</title></circle>
+<circle cx="730.0" cy="344.4" r="6" fill="transparent"><title>Delay τ=2.4
+x = 96.0 GiB
+mean +4.38 GiB
+s42 +1.7, s43 +6.8, s44 +4.6</title></circle>
+<circle cx="245.5" cy="360.5" r="4.5" fill="#1b4f91" stroke="#fcfcfb" stroke-width="2"/>
+<rect x="740" y="112.4" width="10" height="10" rx="2" fill="#52514e"/>
+<text x="756" y="121.4" font-size="12" fill="#0b0b0b">Stale (never) [H0] +18.4</text>
+<text x="756" y="136.4" font-size="11" fill="#898781">seeds +17.4 … +19.5 (n=3)</text>
+<rect x="740" y="339.4" width="10" height="10" rx="2" fill="#1b4f91"/>
+<text x="756" y="348.4" font-size="12" fill="#0b0b0b">Delay τ=2.4 +4.4</text>
+<text x="756" y="363.4" font-size="11" fill="#898781">seeds +1.7 … +6.8 (n=3)</text>
+<rect x="740" y="369.4" width="10" height="10" rx="2" fill="#2a78d6"/>
+<text x="756" y="378.4" font-size="12" fill="#0b0b0b">Delay τ=1.2 +3.4</text>
+<text x="756" y="393.4" font-size="11" fill="#898781">seeds +1.5 … +6.0 (n=3)</text>
+<rect x="740" y="432.0" width="10" height="10" rx="2" fill="#6aa5e6"/>
+<text x="756" y="441.0" font-size="12" fill="#0b0b0b">Delay τ=0.6 -1.3</text>
+<text x="756" y="456.0" font-size="11" fill="#898781">seeds -2.5 … +0.7 (n=3)</text>
+</svg>

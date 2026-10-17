@@ -1,0 +1,5 @@
+verify_g24_late_rewrite_s42_emberygram_10160207: late_rewrite at 2, seed 42, baseline verify_ref_g24_late_rewrite_s42_emberygram
+  ok   FTL state = baseline at all 6 snapshots through post_02
+  ok   application LBA stream = baseline in all 7 chunks
+  ok   rewrite moved 1151092 blocks (54.9% of B); PID1 B before 1151092, after 0
+H1V2_CHECK_PASS

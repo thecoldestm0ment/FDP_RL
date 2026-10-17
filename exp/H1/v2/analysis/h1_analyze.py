@@ -41,9 +41,11 @@ BASE_OF = {"delay": "stale", "late_rewrite": "redirect", "oracle_rewrite": "redi
 SURFACE, INK, INK2, MUTED = "#fcfcfb", "#0b0b0b", "#52514e", "#898781"
 GRID, AXIS = "#e1e0d9", "#c3c2b7"
 BLUE, ORANGE = "#2a78d6", "#eb6834"
+# post chunk of each planned level (τ = 0.3 per chunk)
+LEVELS = {"delay": (2, 4, 8), "late_rewrite": (1, 2, 4, 8), "oracle_rewrite": (2,)}
 RAMP = {"delay": ["#6aa5e6", "#2a78d6", "#1b4f91"],
-        "late_rewrite": ["#f19a63", "#eb6834", "#b04716"],
-        "oracle_rewrite": ["#c9a3e0", "#9b63c4", "#6b3a91"]}
+        "late_rewrite": ["#f0a06a", "#e57a3c", "#c75a1e", "#8f3a0f"],
+        "oracle_rewrite": ["#7b4fb0"]}
 
 
 def c0(path: Path) -> tuple[int, int, int]:
@@ -257,12 +259,11 @@ def summary(seeds: list[int], out: Path) -> None:
                    w["pts"].index((inter["at_chunk"], w["y"][inter["at_chunk"]])) if inter else None)
             paths.setdefault((exp, pol, at), {})[seed] = (path, act)
         xg = [x / GIB for x in red["x"]]
-    for exp, pols in (("h1a", ["delay"]), ("h1b", ["late_rewrite"])):
-        for pol in pols:
-            for at in (2, 4, 8):
-                for s in seeds:
-                    if (pol, at, s) not in found:
-                        missing.append(f"{pol} at {at} s{s}")
+    for pol, ats in LEVELS.items():
+        for at in ats:
+            for s in seeds:
+                if (pol, at, s) not in found:
+                    missing.append(f"{pol} at {at} s{s}")
 
     def fmt(v):
         return "-" if v is None else (f"{v:.3f}" if isinstance(v, float) else str(v))
@@ -298,6 +299,23 @@ def summary(seeds: list[int], out: Path) -> None:
                                                   for s in seeds)
                          + f"{statistics.fmean(vals):>9.2f}{min(vals):>8.2f}..{max(vals):.2f}  "
                          + ", ".join(extra))
+        lines.append("")
+    # Oracle split: late(τ) - Rewrite(0) = [oracle(τ) - Rewrite(0)] + [late(τ) - oracle(τ)]
+    by = {(r["policy"], r["at_chunk"], r["seed"]): r["dmedia_end_GiB"] for r in rows}
+    for at in LEVELS["oracle_rewrite"]:
+        have = [s for s in seeds if all(k in by for k in
+                (("late_rewrite", at, s), ("oracle_rewrite", at, s), ("rewrite", 0, s)))]
+        if not have:
+            continue
+        lines.append(f"H1-b split at τ={0.3 * at:.1f}: late - Rewrite(τ=0) = volume + timing (GiB at 4x)")
+        lines.append(f"{'part':<26}" + "".join(f"{'s' + str(s):>9}" for s in have) + f"{'mean':>9}")
+        parts = (("volume (oracle - Rewrite)", lambda s: by[("oracle_rewrite", at, s)] - by[("rewrite", 0, s)]),
+                 ("timing (late - oracle)", lambda s: by[("late_rewrite", at, s)] - by[("oracle_rewrite", at, s)]),
+                 ("total (late - Rewrite)", lambda s: by[("late_rewrite", at, s)] - by[("rewrite", 0, s)]))
+        for name, f in parts:
+            vals = [f(s) for s in have]
+            lines.append(f"{name:<26}" + "".join(f"{v:>9.3f}" for v in vals)
+                         + f"{statistics.fmean(vals):>9.2f}")
         lines.append("")
     if missing:
         lines.append("missing H1 runs: " + ", ".join(missing))
@@ -363,15 +381,15 @@ def plot_curves(path: Path, exp: str, curves: dict, xg: list[float], seeds: list
     series = []  # (key, color, dash, name)
     if exp == "h1a":
         series.append((("h1a", "stale", None), INK2, "6 5", "Stale (never) [H0]"))
-        for i, at in enumerate((2, 4, 8)):
+        for i, at in enumerate(LEVELS["delay"]):
             series.append((("h1a", "delay", at), RAMP["delay"][i], "", f"Delay τ={0.3 * at:.1f}"))
         title = "H1-a: cost of delaying the redirect"
     else:
         series.append((("h1b", "rewrite", 0), INK2, "6 5", "Rewrite τ=0 [H0]"))
-        for i, at in enumerate((2, 4, 8)):
+        for i, at in enumerate(LEVELS["late_rewrite"]):
             series.append((("h1b", "late_rewrite", at), RAMP["late_rewrite"][i], "",
                            f"Late rewrite τ={0.3 * at:.1f}"))
-        for i, at in enumerate((2, 4, 8)):
+        for i, at in enumerate(LEVELS["oracle_rewrite"]):
             if ("h1b", "oracle_rewrite", at) in curves:
                 series.append((("h1b", "oracle_rewrite", at), RAMP["oracle_rewrite"][i], "2 4",
                                f"Oracle rewrite τ={0.3 * at:.1f}"))

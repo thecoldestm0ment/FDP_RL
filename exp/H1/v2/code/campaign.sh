@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
-# H1 v2 campaign: H1-a delay and H1-b late_rewrite at post chunk 2 / 4 / 8
-# (B turnover τ = 0.6 / 1.2 / 2.4), QD1 latency-off, H0 v3 lengths
-# (g24, pre 3x in 12 chunks, post 4x in 32 chunks, rate unlimited).
-#   campaign.sh 42                          stage 1: 6 runs (~3.6 h)
-#   campaign.sh 43 44                       stage 2: 12 runs (~7.3 h)
-#   H1_RUNS="oracle_rewrite:4" campaign.sh 42 43 44  optional control
-# Requires a passing verify_env.sh with the current FEMU binary.
+# H1 v2 campaign, 8 runs per seed (B turnover τ = 0.3 per post chunk), QD1
+# latency-off, H0 v3 lengths (g24, pre 3x in 12 chunks, post 4x in 32 chunks,
+# rate unlimited):
+#   H1-a delay          τ 0.6 / 1.2 / 2.4      (chunk 2 / 4 / 8)
+#   H1-b late_rewrite   τ 0.3 / 0.6 / 1.2 / 2.4 (chunk 1 / 2 / 4 / 8)
+#   oracle_rewrite      τ 0.6 (diagnostic: late_rewrite τ 0.6's blocks, moved at the shift)
+#   campaign.sh 42 43 44                    all 24 runs (~15 h at H0 v3 speed)
+#   H1_RUNS="late_rewrite:16" campaign.sh 42     a different plan
+# Requires a passing verify_env.sh with the current FEMU binary; run
+# equiv_h0.sh once first (H1 code reproduces the H0 v3 Rewrite endpoint).
 # After every run, h1_analyze.py check compares it with its H0 v3 baseline;
 # a failed check stops the campaign, also on a rerun (QD1 is deterministic, so a retry would
 # fail the same way). A run that does not complete is moved aside
@@ -25,13 +28,15 @@ log() { echo "$(date '+%F %T') $*" | tee -a "$LOG"; }
 
 [[ $# -ge 1 ]] || { echo "usage: $0 SEED... (e.g. $0 42)"; exit 2; }
 # policy:post-chunk items; chunk c is τ = 0.3 c
-PLAN="${H1_RUNS:-delay:2 delay:4 delay:8 late_rewrite:2 late_rewrite:4 late_rewrite:8}"
+PLAN="${H1_RUNS:-delay:2 delay:4 delay:8 late_rewrite:1 late_rewrite:2 late_rewrite:4 late_rewrite:8 oracle_rewrite:2}"
 
 preflight() {
     [[ -c /dev/kvm ]] || { log "PREFLIGHT FAIL: /dev/kvm missing (setup_host.sh --apply)"; return 1; }
     findmnt -n /tmp/h0-v2-zram >/dev/null || { log "PREFLIGHT FAIL: zram not mounted (setup_host.sh --apply)"; return 1; }
     pgrep -x qemu-system-x86 >/dev/null && { log "PREFLIGHT FAIL: qemu already running"; return 1; }
-    python3 - "$OPS/verify_env.json" "$ROOT/build-femu/qemu-system-x86_64" <<'EOF' || { log "PREFLIGHT FAIL: run verify_env.sh first (needs VERIFY_ENV_PASS with this FEMU binary)"; return 1; }
+    local f
+    for f in verify_env equiv_h0; do
+        python3 - "$OPS/$f.json" "$ROOT/build-femu/qemu-system-x86_64" <<'EOF' || { log "PREFLIGHT FAIL: run $f.sh first (needs a pass with this FEMU binary on this PC)"; return 1; }
 import hashlib, json, socket, sys
 from pathlib import Path
 v = Path(sys.argv[1])
@@ -40,6 +45,7 @@ r = json.loads(v.read_text()) if v.exists() else {}
 ok = r.get("pass") and r.get("qemu_sha256") == h and r.get("host") == socket.gethostname()
 sys.exit(0 if ok else 1)
 EOF
+    done
     return 0
 }
 

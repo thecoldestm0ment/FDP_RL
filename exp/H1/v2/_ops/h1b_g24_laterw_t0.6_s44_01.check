@@ -1,0 +1,5 @@
+h1b_g24_laterw_t0.6_s44_01: late_rewrite at 2, seed 44, baseline main_g24_redirect_s44_01
+  ok   FTL state = baseline at all 16 snapshots through post_02
+  ok   application LBA stream = baseline in all 45 chunks
+  ok   rewrite moved 1151377 blocks (54.9% of B); PID1 B before 1151377, after 0
+H1V2_CHECK_PASS

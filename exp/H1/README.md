@@ -1,8 +1,8 @@
 # H1 — intervention timing
 
-## v2 (준비 완료, 본 실험은 노트북에서)
+## v2 (본 실험 완료, 2026-10-17)
 
-- 개입 시점을 B turnover τ = 0.6 / 1.2 / 2.4로 두고, H0 v3 main run을 τ=0과 never 끝점으로 재사용 → [실험계획](../docs/H1_v2_실험계획.md)
+- 개입 시점을 B turnover τ로 두고(H1-a 0.6/1.2/2.4, H1-b 0.3/0.6/1.2/2.4, oracle 0.6), H0 v3 main run을 τ=0과 never 끝점으로 재사용 → [실험계획](../docs/H1_v2_실험계획.md)
 - H1-a `delay`: redirect 지연. H1-b `late_rewrite`: 즉시 redirect 후, 덮어써지지 않은 old B만 τ에 rewrite
 - 실행 순서와 파일: [v2/README.md](v2/README.md)
 

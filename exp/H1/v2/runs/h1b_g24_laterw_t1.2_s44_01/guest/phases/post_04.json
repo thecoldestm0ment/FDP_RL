@@ -1,0 +1,1 @@
+{"phase":"shift","placement":"redirect","writes":786432,"completed":786432,"reads":0,"logical_hash":"e9e3af840625eee9","pid_hash":"8ff7160e90101bc5","A":78498,"B":629000,"C":78934,"elapsed_ns":30753413291,"iops":25572.19,"p99_ns":170707,"p999_ns":1684966,"request_bytes":4096,"max_outstanding":1,"drained":true,"issued_logical_hash":"e9e3af840625eee9","skip_chunks":0}

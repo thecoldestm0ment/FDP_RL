@@ -1,0 +1,24 @@
+H1-a delayed redirect: ΔMedia vs Redirect at 4x (GiB)
+level                           s42      s43      s44     mean         min..max  extra (mean)
+redirect τ=0.0 [H0]           0.000    0.000    0.000     0.00    0.00..0.00  
+delay τ=0.6                  -2.221    0.707   -2.526    -1.35   -2.53..0.71  -8% of Stale gap, 0.4 GiB by switch
+delay τ=1.2                   1.522    5.991    2.779     3.43    1.52..5.99  18% of Stale gap, 1.1 GiB by switch
+delay τ=2.4                   1.743    6.846    4.550     4.38    1.74..6.85  23% of Stale gap, 3.4 GiB by switch
+stale (never) [H0]           17.418   19.453   18.407    18.43   17.42..19.45  
+
+H1-b late rewrite of untouched old B: ΔMedia vs Redirect at 4x (GiB)
+level                           s42      s43      s44     mean         min..max  extra (mean)
+rewrite τ=0.0 [H0]           34.923   40.217   36.397    37.18   34.92..40.22  100% of B rewritten, 45.1 GiB rewrite Media, 8.0 GiB saved after, payback None/None/None
+late_rewrite τ=0.3           23.815   28.117   24.648    25.53   23.81..28.12  74% of B rewritten, 35.8 GiB rewrite Media, 10.3 GiB saved after, payback None/None/None
+late_rewrite τ=0.6           20.323   25.349   27.779    24.48   20.32..27.78  55% of B rewritten, 28.5 GiB rewrite Media, 4.0 GiB saved after, payback None/None/None
+oracle_rewrite τ=0.6         15.411   15.602   12.731    14.58   12.73..15.60  55% of B rewritten, 28.2 GiB rewrite Media, 13.6 GiB saved after, payback None/None/None
+late_rewrite τ=1.2            9.403   14.085   13.360    12.28    9.40..14.08  30% of B rewritten, 15.3 GiB rewrite Media, 3.0 GiB saved after, payback None/None/None
+late_rewrite τ=2.4            2.770   -0.631    4.071     2.07   -0.63..4.07  9% of B rewritten, 5.0 GiB rewrite Media, 2.9 GiB saved after, payback None/post_20/None
+redirect (never) [H0]         0.000    0.000    0.000     0.00    0.00..0.00  
+
+H1-b split at τ=0.6: late - Rewrite(τ=0) = volume + timing (GiB at 4x)
+part                            s42      s43      s44     mean
+volume (oracle - Rewrite)   -19.512  -24.615  -23.666   -22.60
+timing (late - oracle)        4.911    9.747   15.048     9.90
+total (late - Rewrite)      -14.601  -14.868   -8.618   -12.70
+

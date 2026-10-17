@@ -1,0 +1,10 @@
+{
+  "pass": true,
+  "host": "emberygram",
+  "run": "verify_g24_late_rewrite_s42_emberygram_10160207",
+  "qemu_sha256": "636a5585190baf92cbe350385038d3934534bdf4e01cc7fb9bad93c792213bd3",
+  "run_rc": 0,
+  "check_rc": 0,
+  "mismatch": [],
+  "time": "2026-10-16 02:20:06"
+}
