@@ -1,0 +1,28 @@
+pre WAF: ['7.458', '7.492', '7.469', '7.422', '7.533', '7.487', '7.572', '7.436', '7.469', '7.459']
+
+ dMedia vs Redirect at 1x/2x/4x (sim, seeds 42-44 | FEMU 4x) and sim mean/SD over 10 seeds at 4x
+stale         +3.7/  +6.7/ +15.3    +4.3/  +8.2/ +19.6    +2.7/  +9.0/ +17.1  | sim10 mean +19.12 sd  2.02  sim3 mean +17.33 FEMU +17.4/+19.4/+18.4 mean +18.4
+rewrite      +41.0/ +41.5/ +39.6   +40.8/ +43.1/ +43.6   +38.8/ +40.7/ +38.5  | sim10 mean +41.01 sd  2.59  sim3 mean +40.60 FEMU +34.9/+40.2/+36.4 mean +37.2
+delay2        +0.5/  +1.1/  -1.3    +0.8/  -0.0/  +3.0    +0.2/  -0.5/  -2.0  | sim10 mean  +1.03 sd  2.95  sim3 mean  -0.11 FEMU -2.2/+0.7/-2.5 mean -1.3
+delay4        +2.1/  +0.8/  -0.1    +2.4/  +3.9/  +7.5    +1.3/  +3.5/  +2.9  | sim10 mean  +3.45 sd  2.30  sim3 mean  +3.41 FEMU +1.5/+6.0/+2.8 mean +3.4
+delay8        +3.7/  +5.0/  +2.6    +4.3/  +7.2/  +9.8    +2.7/  +4.2/  +3.9  | sim10 mean  +6.02 sd  2.24  sim3 mean  +5.46 FEMU +1.7/+6.8/+4.5 mean +4.4
+late1        +30.5/ +26.4/ +23.0   +31.6/ +30.9/ +33.0   +29.7/ +28.2/ +23.3  | sim10 mean +30.22 sd  3.88  sim3 mean +26.42 FEMU +23.8/+28.1/+24.6 mean +25.5
+late2        +21.9/ +18.3/ +18.8   +23.4/ +23.5/ +25.5   +24.6/ +26.0/ +26.5  | sim10 mean +24.70 sd  2.71  sim3 mean +23.61 FEMU +20.3/+25.4/+27.8 mean +24.5
+late4        +12.2/ +10.4/  +7.4   +12.5/ +12.5/ +14.1   +11.4/ +12.9/ +11.6  | sim10 mean +12.19 sd  2.35  sim3 mean +11.03 FEMU +9.4/+14.1/+13.4 mean +12.3
+late8         +5.7/  +4.3/  -0.0    +4.8/  +1.5/  +1.4    +4.6/  +4.0/  +1.9  | sim10 mean  +2.98 sd  2.52  sim3 mean  +1.08 FEMU +2.8/-0.6/+4.1 mean +2.1
+redirect_p    -0.4/  -1.7/  -3.0    -0.2/  -1.4/  -0.3    +0.1/  +0.2/  +0.7  | sim10 mean  +0.47 sd  1.60  sim3 mean  -0.87
+stale_p       +3.9/  +6.6/ +15.9    +3.4/  +7.9/ +19.4    +2.5/  +8.5/ +18.1  | sim10 mean +19.03 sd  1.70  sim3 mean +17.78
+
+Stale-Redirect per-1x increments (sim mean over 10 seeds):  ['+3.36', '+5.00', '+5.44', '+5.32']  FEMU +3.4 +4.7 +5.7 +4.7
+Stale rate 2x-4x GiB/1x: mean 5.38 sd 0.94 (FEMU 5.17)
+redirect copies A/B/C GiB mean: ['66.8', '463.3', '99.4'] victims RUH0/1/2: ['612', '1129', '4064']
+stale copies A/B/C GiB mean: ['67.1', '324.1', '257.4'] victims RUH0/1/2: ['614', '5343', '0']
+FEMU redirect copies 66.8/463.9/100.0 victims 612/1130/4072; stale copies 67.1/315.3/266.7 victims 614/5347/0
+rewrite moved GiB 8.00 media GiB 46.5 per moved 5.82
+late1 moved GiB 5.93 media GiB 36.0 per moved 6.08
+late2 moved GiB 4.39 media GiB 28.4 per moved 6.47
+late4 moved GiB 2.41 media GiB 15.0 per moved 6.25
+late8 moved GiB 0.73 media GiB 5.0 per moved 6.82
+FEMU rewrite media 45.1 (5.64/GiB); late t0.3 35.8, t0.6 28.5, t1.2 15.3, t2.4 5.0
+perturbation null redirect_p-redirect: 1x sd 0.46 mean -0.10; 4x sd 1.60 mean +0.47  (values ['-3.0', '-0.3', '+0.7', '+1.6', '+2.2', '-0.4', '+1.9', '+0.1', '+2.0', '-0.1'])
+perturbation null stale_p-stale: 1x sd 0.49 mean -0.13; 4x sd 0.68 mean -0.09  (values ['+0.6', '-0.3', '+1.0', '+0.3', '+0.6', '-1.0', '-0.5', '-0.6', '-0.8', '-0.3'])

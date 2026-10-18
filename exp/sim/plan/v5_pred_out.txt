@@ -1,0 +1,27 @@
+===== 240-PI (8 seeds): contrasts at 1x/2x/4x/6x/8x
+  K-S1      +0.12 sd  0.21 |   +0.50 sd  0.24 |   +3.72 sd  0.23 |   +7.54 sd  0.28 |  +11.81 sd  0.41
+  K-S0      +0.14 sd  0.14 |   +0.51 sd  0.22 |   +3.75 sd  0.28 |   +7.79 sd  0.31 |  +12.17 sd  0.31
+  S1-S0      +0.02 sd  0.16 |   +0.02 sd  0.24 |   +0.03 sd  0.26 |   +0.25 sd  0.27 |   +0.36 sd  0.41
+  K-R1      +1.26 sd  0.20 |   +3.44 sd  0.19 |   +8.27 sd  0.42 |  +13.33 sd  0.49 |  +18.21 sd  0.68
+  S1-R1      +1.14 sd  0.29 |   +2.95 sd  0.19 |   +4.55 sd  0.32 |   +5.78 sd  0.49 |   +6.40 sd  0.59
+  K-SL16    +0.00 sd  0.00 |   +0.00 sd  0.00 |   +0.88 sd  0.26 |   +3.95 sd  0.33 |   +7.68 sd  0.27
+  K-SL22    +0.00 sd  0.00 |   +0.00 sd  0.00 |   +0.03 sd  0.20 |   +2.47 sd  0.26 |   +6.17 sd  0.29
+  S1-SL22    -0.12 sd  0.21 |   -0.50 sd  0.24 |   -3.69 sd  0.16 |   -5.07 sd  0.33 |   -5.64 sd  0.47
+  D=1x  K_D-So_D   +0.12 sd  0.21 |   -1.54 sd  0.28 |   -3.86 sd  0.38 |   -5.30 sd  0.42 |   -6.08 sd  0.40
+  D=1x  K_D-Rs_D   +1.26 sd  0.20 |   +1.82 sd  0.37 |   +1.72 sd  0.43 |   +1.27 sd  0.55 |   +1.15 sd  0.72
+  D=2x  K_D-So_D   +0.12 sd  0.21 |   +0.50 sd  0.24 |   -2.84 sd  0.25 |   -4.74 sd  0.23 |   -5.87 sd  0.33
+  D=2x  K_D-Rs_D   +1.26 sd  0.20 |   +3.44 sd  0.19 |   +3.57 sd  0.43 |   +4.05 sd  0.59 |   +3.83 sd  0.97
+  one-time net switching cost S1-K over [chunk1, +1x] =   -0.15 sd  0.22
+  swap-back net cost So_8-K_8 over [1x, 2x] =   +1.65 sd  0.37  So_16-K_16 over [2x,3x] =   +1.82 sd  0.27
+  post-branch increments [1x,4x]: persistent K-S1   +3.60 sd  0.20  revert K_8-So_8   -3.98 sd  0.41
+  rates [1x,4x]: K-R1   +2.34 sd  0.11  S1-R1   +1.14 sd  0.12  K-S1   +1.20 sd  0.07
+  rates [4x,8x]: K-R1   +2.48 sd  0.10  S1-R1   +0.46 sd  0.09
+  residue A in RUH0 under S1 at 1x/2x/4x (fraction of A): [0.769, 0.57, 0.313]
+  residue B in RUH0 under So_8 at 1x+1ch/2x/4x: [0.845, 0.65, 0.357]
+===== 240-II (8 seeds): contrasts at 1x/2x/4x
+  K-S1      +0.67 sd  0.18 |   +1.60 sd  0.23 |   +3.17 sd  0.34
+  K-S0      +0.73 sd  0.18 |   +1.65 sd  0.16 |   +3.21 sd  0.18
+  S1-S0      +0.05 sd  0.11 |   +0.06 sd  0.21 |   +0.05 sd  0.35
+  K-R1      +1.37 sd  0.32 |   +2.91 sd  0.20 |   +5.58 sd  0.23
+  D=1x K_8-So_8   +0.67 sd  0.18 |   +0.90 sd  0.42 |   +1.16 sd  0.42  K_8-Rs_8   +1.37 sd  0.32 |   +2.38 sd  0.32 |   +3.54 sd  0.40
+  II pre-shift WAF 3.09  PI pre-shift WAF 2.997

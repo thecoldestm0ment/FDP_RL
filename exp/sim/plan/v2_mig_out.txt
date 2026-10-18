@@ -1,0 +1,28 @@
+===== nru 212
+ (a) no-shift: sep3-base at 1x/2x/4x/6x   -1.13 sd  2.22 |   -0.65 sd  4.62 |   +1.72 sd  8.11 |   +5.09 sd  8.87
+  RW0: moved 8.00 GiB, migration Media 46.79 GiB (5.85/GiB)
+  SM0: moved 8.00 GiB, migration Media 33.43 GiB (4.18/GiB)
+  SM8: moved 5.93 GiB, migration Media 35.04 GiB (5.91/GiB)
+  fSM0: moved 8.00 GiB, migration Media 33.43 GiB (4.18/GiB)
+ (b) RW0-R0 (rewrite vs redirect, + = rewrite costs more) at 1x/2x/4x/6x  +39.85 sd  1.58 |  +40.96 sd  1.36 |  +40.86 sd  2.60 |  +41.36 sd  2.73
+     SM0-S0 (swap+migrate A vs swap)                       +23.66 sd  2.65 |  +18.21 sd  2.87 |  +11.91 sd  2.18 |   +6.68 sd  4.31
+     SM8-S0 (swap, migrate A at 1x)                        +35.04 sd  1.67 |  +25.35 sd  2.35 |  +19.64 sd  3.26 |  +12.59 sd  4.20
+     K-SM0                                                -24.81 sd  2.82 |  -17.83 sd  2.59 |   -5.60 sd  2.28 |   +8.45 sd  4.88
+ (c) frozen A: fK-fS0   -5.85 sd  5.21 |  -10.75 sd 11.00 |  -21.88 sd 21.68 |  -31.72 sd 26.17
+               fSM0-fS0  -11.01 sd  2.74 |  -52.50 sd  3.88 | -135.02 sd  6.10 | -213.14 sd  8.95
+               fK-fR0   +2.79 sd  2.77 |   +6.94 sd  2.98 |  +21.11 sd  8.54 |  +31.62 sd 11.65
+     rates 4x-6x: SM0-S0   -2.62 sd  1.45  fSM0-fS0  -39.06 sd  1.56  sep3-base   +1.44 sd  1.39
+===== nru 240
+ (a) no-shift: sep3-base at 1x/2x/4x/6x   -0.39 sd  0.17 |   -0.73 sd  0.26 |   -0.18 sd  0.42 |   +0.04 sd  0.44
+  RW0: moved 8.00 GiB, migration Media 21.11 GiB (2.64/GiB)
+  SM0: moved 8.00 GiB, migration Media 16.47 GiB (2.06/GiB)
+  SM8: moved 5.93 GiB, migration Media 13.07 GiB (2.21/GiB)
+  fSM0: moved 8.00 GiB, migration Media 16.47 GiB (2.06/GiB)
+ (b) RW0-R0 (rewrite vs redirect, + = rewrite costs more) at 1x/2x/4x/6x  +16.61 sd  0.20 |  +16.84 sd  0.33 |  +17.04 sd  0.38 |  +16.91 sd  0.53
+     SM0-S0 (swap+migrate A vs swap)                        +6.84 sd  0.19 |   +5.79 sd  0.34 |   +4.72 sd  0.25 |   +3.56 sd  0.25
+     SM8-S0 (swap, migrate A at 1x)                        +13.07 sd  0.27 |   +4.34 sd  0.55 |   +3.75 sd  0.52 |   +2.63 sd  0.36
+     K-SM0                                                 -6.71 sd  0.26 |   -5.27 sd  0.30 |   -0.97 sd  0.41 |   +4.23 sd  0.40
+ (c) frozen A: fK-fS0   +0.20 sd  0.31 |   +0.26 sd  0.49 |   +0.46 sd  1.10 |   +0.68 sd  1.70
+               fSM0-fS0   -1.36 sd  0.35 |  -17.48 sd  0.59 |  -49.91 sd  1.29 |  -82.16 sd  1.99
+               fK-fR0   +1.33 sd  0.55 |   +2.65 sd  1.05 |   +5.99 sd  2.32 |   +9.17 sd  3.63
+     rates 4x-6x: SM0-S0   -0.58 sd  0.08  fSM0-fS0  -16.12 sd  0.36  sep3-base   +0.19 sd  0.08
