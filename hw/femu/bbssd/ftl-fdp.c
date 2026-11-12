@@ -3076,6 +3076,7 @@ static void ssd_trim_fdp_reset_all(FemuCtrl *n, NvmeRequest *req, uint64_t slba,
     memset(endgrp->fdp.mbmw, 0, sizeof(endgrp->fdp.mbmw));
     memset(endgrp->fdp.mbe, 0, sizeof(endgrp->fdp.mbe));
     qemu_mutex_unlock(&endgrp->fdp.stats_lock);
+    qatomic_set(&endgrp->fdp.invalid_pid_cmds, 0);
 
     ftl_log("FDP TRIM: all RUs reset\n");
 }

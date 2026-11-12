@@ -1,7 +1,7 @@
-# db_bench 공통 옵션 (PC와 FEMU가 똑같이 씀). source 해서 씁니다.
+# db_bench 공통 옵션 (PC·FEMU 동일). source 해서 씀.
 # 사용: dbbench_common_args <util>  -> 배열 DB_ARGS 를 채움
-# 값은 전부 config.env 에서 와요. 두 사용률·두 정책에 같은 값이 들어가요 (사용률은 N 에만 영향).
-# 옵션 파일(--options_file)은 쓰지 않고 CLI로만 넘겨요. 실제 적용값은 pilot.py optcheck 가 LOG로 확인해요.
+# 값은 전부 config.env. 두 사용률·두 정책 공통 (사용률은 N 에만 영향).
+# --options_file 없이 CLI로만 넘김. 실제 적용값은 pilot.py optcheck 가 LOG로 확인.
 dbbench_common_args() {
   local u="$1"
   local base tfile wbuf
@@ -34,14 +34,13 @@ dbbench_common_args() {
     --statistics
     --stats_interval_seconds="${STATS_INTERVAL_SEC:-60}"
     --histogram=false
-    # LOG 크기 묶기 (100 MB x 3개)는 이번에 미적용:
-    #   RocksDB 7.2.2 자체에는 DBOptions max_log_file_size·keep_log_file_num 이 있어요 (LOG에 기본값 0·1000이 찍힘).
-    #   하지만 db_bench 7.2.2 CLI 에는 이 플래그가 없어서 (tools/db_bench_tool.cc 에 DEFINE 없음)
-    #   넣으면 "unknown command line flag"로 멈춰요. 쓰려면 db_bench 패치가 필요해요.
+    # LOG 크기 제한 (100 MB x 3개) 미적용: DBOptions max_log_file_size·keep_log_file_num 은 있으나
+    #   db_bench 7.2.2 CLI 플래그 없음 (tools/db_bench_tool.cc 에 DEFINE 없음 -> "unknown command line flag").
+    #   쓰려면 db_bench 패치 필요.
     # --max_log_file_size=104857600
     # --keep_log_file_num=3
   )
-  # 추적용 통계: RocksDB 동작은 그대로, 출력만 늘어요
+  # 추적용 통계: RocksDB 동작은 그대로, 출력만 늘어남
   #   --stats_per_interval=1    : stats_interval_seconds 마다 thread 0 이 rocksdb.stats 를 stderr 로 출력
   #   --stats_dump_period_sec   : LOG 에도 같은 간격으로 통계 출력 (DBOptions)
   if [[ "${TRACK_STATS:-0}" == "1" ]]; then

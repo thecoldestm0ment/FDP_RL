@@ -29,7 +29,7 @@ if [[ ! -d "$SRC/lan_bench" ]]; then
 fi
 LAN_PATCH="$SRC/lan_bench/RocksDB/compile/rocksDB_patch.txt"
 
-# 2) RocksDB 7.2.2 (모드마다 따로 받음: TorFS는 빌드 시 플러그인으로 들어가서)
+# 2) RocksDB 7.2.2 (모드별 별도 트리: TorFS가 빌드 시 플러그인으로 들어감)
 TREE="$SRC/rocksdb-$MODE"
 if [[ ! -d "$TREE" ]]; then
   git clone --depth 1 --branch "$ROCKSDB_TAG" https://github.com/facebook/rocksdb.git "$TREE"
@@ -47,13 +47,13 @@ if [[ "$MODE" == "femu" ]]; then
     echo "[build] TorFS $TORFS_COMMIT + torfs_force_pid.patch 적용"
   fi
   if ! pkg-config --exists xnvme 2>/dev/null && [[ ! -e /usr/local/lib/libxnvme.so && ! -e /usr/lib/libxnvme.so ]]; then
-    echo "[build] 경고: xNVMe를 못 찾았어요. 설치 후 다시 실행하세요 (https://xnvme.io)."; exit 1
+    echo "[build] 경고: xNVMe 없음. 설치 후 다시 실행 (https://xnvme.io)."; exit 1
   fi
   PLUGINS="torfs"
 fi
 
 # 4) 빌드
-#   GCC 13 이상에서 옛 RocksDB가 <cstdint> 누락으로 실패하는 경우가 있어 미리 넣어 둠
+#   GCC 13+ 에서 옛 RocksDB가 <cstdint> 누락으로 실패 -> 미리 include
 cd "$TREE"
 DEBUG_LEVEL=0 ROCKSDB_DISABLE_JEMALLOC=true DISABLE_WARNING_AS_ERROR=1 \
 EXTRA_CXXFLAGS="-include cstdint" ROCKSDB_PLUGINS="$PLUGINS" \

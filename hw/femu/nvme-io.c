@@ -2347,6 +2347,7 @@ void nvme_fdp_note_invalid_pid(FemuCtrl *n, NvmeNamespace *ns, uint16_t pid,
         .ruhid = cpu_to_le16(ruhid),
     };
 
+    qatomic_inc(&endgrp->fdp.invalid_pid_cmds);
     if (nvme_fdp_event_enabled(endgrp, &endgrp->fdp.ruhs[ruhid],
                                FDP_EVT_INVALID_PID)) {
         nvme_fdp_record_event(n, endgrp, true, &e);

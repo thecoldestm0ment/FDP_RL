@@ -2837,11 +2837,13 @@ static uint16_t nvme_femu_fdp_usage(FemuCtrl *n, uint32_t buf_len,
     buf = g_malloc0(log_size);
     hdr = (FemuFdpUsageLog *)buf;
     d = (FemuFdpUsageDescr *)(hdr + 1);
-    hdr->version = cpu_to_le16(1);
+    hdr->version = cpu_to_le16(2);
     hdr->nruh = cpu_to_le16(nruh);
     hdr->page_bytes = cpu_to_le32(page_bytes);
     hdr->valid_pages = cpu_to_le64(valid);
     hdr->capacity_bytes = cpu_to_le64(cap);
+    hdr->invalid_pid_cmds =
+        cpu_to_le64(qatomic_read(&endgrp->fdp.invalid_pid_cmds));
 
     qemu_mutex_lock(&endgrp->fdp.stats_lock);
     for (i = 0; i < nruh; i++) {

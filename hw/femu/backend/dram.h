@@ -16,6 +16,7 @@ typedef struct SsdDramBackend {
     void    *logical_space;
     int64_t size; /* in bytes */
     int     femu_mode;
+    int     file_fd; /* FEMU_MBE_FILE backing file, -1 for anonymous memory */
     QemuMutex *range_locks; /* NULL: accesses take no lock */
     uint64_t range_waits;   /* lock takes that found the lock held */
 } SsdDramBackend;

@@ -20,8 +20,8 @@
               config.env 의 SPACE_SLOPE·SPACE_FIXED_GIB 값을 출력
   summary     FEMU run 결과를 모아 WAF 표와 판정 출력
 
-설정은 환경변수로 받습니다. 셸에서 `set -a; . ./config.env; set +a` 후 실행하세요.
-표준 라이브러리만 씁니다.
+설정은 환경변수로 받음: 셸에서 `set -a; . ./config.env; set +a` 후 실행.
+표준 라이브러리만 씀.
 """
 import argparse
 import bisect
@@ -54,7 +54,7 @@ def env(name, cast=str, default=None):
     v = os.environ.get(name)
     if v is None or v == "":
         if default is None:
-            sys.exit(f"[pilot] 환경변수 {name} 가 없습니다. config.env 를 먼저 읽어 주세요.")
+            sys.exit(f"[pilot] 환경변수 {name} 없음. config.env 를 먼저 읽을 것.")
         return default
     return cast(v)
 
@@ -96,7 +96,7 @@ def plan(util):
     # (기울기 x 논리 + 고정량) x (1 + 여유) = 목표 사용률 x 용량
     logical = (util * cap / (1 + margin) - fixed) / slope
     if logical <= 0:
-        sys.exit(f"[pilot] 사용률 {util}: 고정량 {fixed/GiB:.2f} GiB 가 목표 사용량보다 커서 데이터를 못 넣어요.")
+        sys.exit(f"[pilot] 사용률 {util}: 고정량 {fixed/GiB:.2f} GiB 가 목표 사용량보다 커서 데이터 못 넣음.")
     n = int(logical // kv)
     logical = n * kv
     peak = slope * logical + fixed              # 측정식이 맞을 때의 최대 사용량
@@ -106,8 +106,8 @@ def plan(util):
     write_buffer = int(env("WRITE_BUFFER_MB", float, base / 2 / MiB) * MiB)
     sizes = level_layout(logical, base, mult, nl)
     lvl, share = last_nonempty_share(sizes, logical)
-    # 마지막 레벨에는 거의 모든 키가 들어가요 (위 레벨은 같은 키의 새 버전). 그래서 논리 데이터 전체를
-    #   그 레벨의 목표 크기와 비교해요. 1을 넘으면 한 레벨 아래로 내려가기 시작해 공간이 갑자기 늘어요.
+    # 마지막 레벨에 거의 모든 키가 있음 (위 레벨은 같은 키의 새 버전) -> 논리 데이터 전체를 그 레벨 목표와 비교.
+    #   1 넘으면 한 레벨 아래로 내려가기 시작해 공간 급증.
     last_target = base * mult ** (lvl - 1)
     return {
         "util": util,
@@ -162,10 +162,10 @@ def cmd_calc(a):
             print(f"  마지막 레벨 목표 크기 대비 : 논리 {p['logical_gib']:.2f} / L{p['last_level']} 목표"
                   f" {p['last_level_target_gib']:.2f} GiB = {p['last_level_fill']*100:.0f}%")
         if p["expected_peak_gib"] > 0.97 * env("DEV_CAPACITY_GIB", float):
-            print("  [경고] 예상 최대 사용량이 용량의 97%를 넘습니다. 공간 부족으로 멈출 수 있어요.")
+            print("  [경고] 예상 최대 사용량이 용량의 97% 초과. 공간 부족으로 멈출 수 있음.")
         if p["last_level_fill"] > 0.9:
-            print(f"  [경고] 마지막 레벨(L{p['last_level']}) 크기가 목표에 가까워요. 넘으면 L{p['last_level']+1}로 내려가기 시작해서"
-                  " 같은 키가 두 레벨에 겹쳐 쌓이고, 공간이 기울기+고정량 식보다 커질 수 있어요.")
+            print(f"  [경고] 마지막 레벨(L{p['last_level']}) 크기가 목표에 가까움. 넘으면 L{p['last_level']+1}로 내려가기 시작해"
+                  " 같은 키가 두 레벨에 겹쳐 쌓이고, 공간이 기울기+고정량 식보다 커질 수 있음.")
         print()
 
 
@@ -221,7 +221,7 @@ def read_fdpstats(dev, endgrp):
     h = re.search(r"HBMW[^\d]*([\d,]+)", out, re.I)
     m = re.search(r"MBMW[^\d]*([\d,]+)", out, re.I)
     if not (h and m):
-        sys.exit("[pilot] 'nvme fdp stats' 출력에서 HBMW/MBMW를 못 찾았어요. COUNTER_METHOD=custom 을 쓰세요.\n" + out)
+        sys.exit("[pilot] 'nvme fdp stats' 출력에서 HBMW/MBMW 못 찾음. COUNTER_METHOD=custom 사용.\n" + out)
     return _num(h.group(1)), _num(m.group(1))
 
 
@@ -238,36 +238,39 @@ def cmd_counters(a):
 
 
 # FEMU 사용량 로그(vendor log C1h, 이 브랜치의 hw/femu/nvme.h FemuFdpUsageLog)
-#   머리 64 B: version u16, nruh u16, page_bytes u32, valid_pages u64, capacity_bytes u64
+#   머리 64 B: version u16, nruh u16, page_bytes u32, valid_pages u64, capacity_bytes u64,
+#             (version 2부터) invalid_pid_cmds u64 = namespace에 없는 PID로 온 쓰기 명령 수
+#             (장치가 placement handle 0으로 조용히 보냄. 0 아니면 PID 오류)
 #   RUH마다 32 B: hbmw u64, mbmw u64, live_pages u64
-#   mbmw에는 그 RUH의 host 쓰기와, 그 RUH가 가진 RU를 GC할 때 옮긴 양이 같이 잡혀요.
-#   live_pages는 그 RUH가 가진 RU에 지금 있는 유효 페이지예요.
-#   II에서는 GC로 옮긴 데이터가 마지막 RUH의 RU에 모여요. 그래서 데이터가 원래 RUH에서
-#   처음 옮겨질 때만 원래 RUH의 mbmw에 잡히고, 그 뒤 다시 옮겨지면 마지막 RUH에 잡혀요.
-#   즉 RUH별 mbmw는 데이터 종류(PID)별 GC 비용이 아니에요 (README "II에서 RUH별 값을 읽는 법").
-FEMU_USAGE_HDR = struct.Struct("<HHIQQ40x")
+#   mbmw = 그 RUH의 host 쓰기 + 그 RUH 소유 RU의 GC 이동량. live_pages = 그 RUH 소유 RU의 유효 페이지.
+#   II에서 GC 데이터는 마지막 RUH의 RU로 모임 -> 원래 RUH mbmw엔 첫 이동만, 재이동은 마지막 RUH에 잡힘.
+#   즉 RUH별 mbmw는 PID별 GC 비용 아님 (README "II에서 RUH별 값을 읽는 법").
+FEMU_USAGE_HDR = struct.Struct("<HHIQQQ32x")
 FEMU_USAGE_DESC = struct.Struct("<QQQ8x")
 
 
 def parse_femu_usage(blob):
     if len(blob) < FEMU_USAGE_HDR.size:
-        raise ValueError(f"로그가 {len(blob)} B뿐이에요")
-    ver, nruh, page_bytes, valid, cap = FEMU_USAGE_HDR.unpack_from(blob, 0)
-    if ver != 1:
+        raise ValueError(f"로그가 {len(blob)} B뿐")
+    ver, nruh, page_bytes, valid, cap, invalid = FEMU_USAGE_HDR.unpack_from(blob, 0)
+    if ver not in (1, 2):
         raise ValueError(f"모르는 로그 version {ver}")
+    if ver < 2:
+        invalid = None     # version 1 FEMU 에는 이 카운터 없음
     ruhs = []
     for i in range(nruh):
         off = FEMU_USAGE_HDR.size + i * FEMU_USAGE_DESC.size
         if off + FEMU_USAGE_DESC.size > len(blob):
-            raise ValueError(f"RUH {nruh}개인데 로그가 {len(blob)} B에서 끝나요")
+            raise ValueError(f"RUH {nruh}개인데 로그가 {len(blob)} B에서 끝남")
         h, m, live = FEMU_USAGE_DESC.unpack_from(blob, off)
         ruhs.append((i, h, m, live * page_bytes))
-    return {"valid_bytes": valid * page_bytes, "capacity_bytes": cap, "ruhs": ruhs}
+    return {"valid_bytes": valid * page_bytes, "capacity_bytes": cap,
+            "invalid_pid_cmds": invalid, "ruhs": ruhs}
 
 
 def read_femu_usage():
     lid = int(str(env("FEMU_USAGE_LID", str, "0xc1")), 0)
-    # 4 KiB를 달라고 해도 장치는 로그 크기만큼만 채우고, 나머지는 0이에요 (RUH 126개까지)
+    # 4 KiB 요청해도 장치는 로그 크기만큼만 채우고 나머지는 0 (RUH 126개까지)
     out = subprocess.run(["nvme", "get-log", env("NVME_DEV"), f"--log-id={lid}",
                           "--log-len=4096", "--raw-binary"],
                          capture_output=True, check=True).stdout
@@ -275,10 +278,91 @@ def read_femu_usage():
 
 
 def cmd_usage(a):
+    """첫 줄 "valid_bytes capacity_bytes invalid_pid_cmds"(카운터가 없는 FEMU면 -1),
+    다음 줄부터 RUH마다 "ruh hbmw mbmw live_bytes"."""
     u = read_femu_usage()
-    print(u["valid_bytes"], u["capacity_bytes"])
+    inv = u["invalid_pid_cmds"]
+    print(u["valid_bytes"], u["capacity_bytes"], -1 if inv is None else inv)
     for ruh, h, m, live in u["ruhs"]:
         print(ruh, h, m, live)
+
+
+def parse_ruh_status(blob):
+    """RUH 상태(IO Management Receive, 'nvme fdp status -b')에서 (pid, ruhid) 목록.
+    머리 16 B(바이트 14–15 = 기술자 수), 기술자마다 32 B: pid u16, ruhid u16, earutr u32, ruamw u64.
+    = 이 네임스페이스가 쓸 수 있는 placement handle 목록 (FEMU namespace_phls)."""
+    if len(blob) < 16:
+        raise ValueError(f"RUH 상태가 {len(blob)} B뿐")
+    (n,) = struct.unpack_from("<H", blob, 14)
+    if 16 + 32 * n > len(blob):
+        raise ValueError(f"기술자 {n}개인데 RUH 상태가 {len(blob)} B에서 끝남")
+    return [struct.unpack_from("<HH", blob, 16 + 32 * i) for i in range(n)]
+
+
+def read_placement():
+    out = subprocess.run(["nvme", "fdp", "status", env("NVME_DEV"), "-b"],
+                         capture_output=True, check=True).stdout
+    return parse_ruh_status(out)
+
+
+def policy_device(policy):
+    """정책마다 기대하는 RUH 수와 placement handle 목록 (config.env 의 NRUH_<정책>, PHS_<정책>)."""
+    nruh = env(f"NRUH_{policy}", int)
+    phs = [int(x) for x in env(f"PHS_{policy}").split(":")]
+    return nruh, phs
+
+
+def cmd_devcheck(a):
+    """run 전에 장치가 이 정책에 맞게 떴는지 확인, 결과는 a.out 에 기록.
+    - RUH 수 = NRUH_<정책>, 모든 RUH가 EXPECT_RUHT (II)
+    - namespace의 placement handle 목록 = PHS_<정책> (GC 전용 마지막 RUH는 없어야 함)
+    - 잘못된 PID 쓰기 카운터 0 (새로 띄운 FEMU면 0)
+    안 맞으면 이유 출력 후 exit 1."""
+    want_nruh, want_phs = policy_device(a.policy)
+    want_t = env("EXPECT_RUHT", str, "any")
+    types = read_ruh_types()
+    pl = read_placement()
+    u = read_femu_usage() if env("RUH_METHOD") == "femu" else None
+    bad = []
+    if len(types) != want_nruh:
+        bad.append(f"RUH 수 {len(types)}개, 기대 {want_nruh}개")
+    if want_t != "any":
+        wrong = [i for i, t in enumerate(types) if RUHT_NAMES.get(t) != want_t]
+        if wrong:
+            bad.append(f"RUH {wrong} 가 {want_t} 아님")
+    got_phs = [ruh for _pid, ruh in sorted(pl)]
+    if got_phs != want_phs:
+        bad.append(f"placement handle 목록 {got_phs}, 기대 {want_phs}")
+    if want_nruh - 1 in got_phs:
+        bad.append(f"GC 전용 RUH {want_nruh - 1} 가 namespace에 노출됨")
+    inv = u["invalid_pid_cmds"] if u else None
+    if u and inv is None:
+        bad.append("이 FEMU 사용량 로그에 잘못된 PID 카운터 없음 (version 1). fdp-pilot 브랜치 FEMU인지 확인")
+    elif inv:
+        bad.append(f"run 전인데 잘못된 PID 쓰기 이미 {inv}번")
+    lines = [f"policy={a.policy}",
+             f"nruh={len(types)}  (기대 {want_nruh})",
+             "ruh_types=" + " ".join(f"{i}:{RUHT_NAMES.get(t, f'?{t}')}" for i, t in enumerate(types)),
+             "placement(pid->ruh)=" + " ".join(f"{p}->{r}" for p, r in sorted(pl)),
+             f"invalid_pid_cmds_at_start={'-' if inv is None else inv}",
+             "check=" + ("OK" if not bad else "FAIL: " + "; ".join(bad))]
+    with open(a.out, "w") as f:
+        f.write("\n".join(lines) + "\n")
+    print("\n".join(lines))
+    if bad:
+        sys.exit(1)
+
+
+def cmd_pidcheck(a):
+    """run 뒤: 잘못된 PID로 온 쓰기 명령 수. 0이면 OK, 아니면 exit 1 (그 run 폐기)."""
+    inv = read_femu_usage()["invalid_pid_cmds"]
+    if inv is None:
+        print("invalid_pid_cmds=-  (카운터 없는 FEMU)")
+        sys.exit(1)
+    print(f"invalid_pid_cmds={inv}")
+    if inv:
+        print("namespace에 없는 PID로 온 쓰기 있음. 장치가 placement handle 0으로 보냄 -> 이 run 폐기.")
+        sys.exit(1)
 
 
 def read_lba_bytes(dev):
@@ -295,8 +379,8 @@ def cmd_lbasize(a):
     try:
         print(read_lba_bytes(env("NVME_DEV")))
     except Exception as e:
-        # 못 읽으면 config 값을 쓰되, 그 사실을 남겨요
-        print(f"[pilot] LBA 크기를 nvme id-ns로 못 읽어 LBA_BYTES={env('LBA_BYTES', int, 512)}를 써요 ({e})",
+        # 못 읽으면 config 값 사용, 그 사실은 stderr 에 기록
+        print(f"[pilot] LBA 크기를 nvme id-ns로 못 읽어 LBA_BYTES={env('LBA_BYTES', int, 512)}를 씀 ({e})",
               file=sys.stderr)
         print(env("LBA_BYTES", int, 512))
 
@@ -307,13 +391,13 @@ RUHT_NAMES = {1: "II", 2: "PI"}
 def parse_fdp_configs(blob):
     """FDP 설정 로그(20h)의 첫 설정에서 RUH 종류 목록 (1 = II, 2 = PI).
     머리 16 B 뒤에 설정 기술자: 크기 u16, FDPA u8, VSS u8(벤더 영역 바이트), NRG u32, NRUH u16 …
-    기술자 앞 64 B와 벤더 영역 뒤에 RUH마다 4 B(첫 바이트가 RUHT)가 와요."""
+    기술자 앞 64 B + 벤더 영역 뒤에 RUH마다 4 B (첫 바이트 = RUHT)."""
     if len(blob) < 16 + 64:
-        raise ValueError(f"로그가 {len(blob)} B뿐이에요")
+        raise ValueError(f"로그가 {len(blob)} B뿐")
     _size, _fdpa, vss, _nrg, nruh = struct.unpack_from("<HBBIH", blob, 16)
     base = 16 + 64 + vss
     if base + 4 * nruh > len(blob):
-        raise ValueError(f"RUH {nruh}개인데 로그가 {len(blob)} B에서 끝나요")
+        raise ValueError(f"RUH {nruh}개인데 로그가 {len(blob)} B에서 끝남")
     return [blob[base + 4 * i] for i in range(nruh)]
 
 
@@ -378,7 +462,7 @@ def parse_levelstats(path):
 
 def parse_cumulative(path):
     """db_bench 통계 출력에서 마지막 누적 compaction 쓰기량과 WAL 쓰기량(GB)을 찾음.
-    RocksDB 통계의 "GB"는 2^30 바이트예요 (internal_stats.cc 의 kGB)."""
+    RocksDB 통계의 "GB" = 2^30 B (internal_stats.cc 의 kGB)."""
     comp = wal = None
     for line in open(path, errors="replace"):
         m = re.search(r"Cumulative compaction:\s*([\d.]+)\s*GB write", line)
@@ -510,8 +594,8 @@ def du_rows(d):
 def nofsync_note(d):
     p = os.path.join(d, "run_params.txt")
     if os.path.exists(p) and "NOFSYNC=1" in open(p, encoding="utf-8").read():
-        return ("  [주의] NOFSYNC=1 (fsync 건너뜀) PC 예비 보정이에요. FEMU 의 검증된 공간 상한이나"
-                " 성능(시간) 측정값으로 쓰지 마세요.")
+        return ("  [주의] NOFSYNC=1 (fsync 건너뜀) PC 예비 보정. FEMU 의 검증된 공간 상한이나"
+                " 성능(시간) 측정값으로 쓰지 말 것.")
     return None
 
 
@@ -544,7 +628,7 @@ def cmd_pcsummary(a):
                 print(f"    {ph:<18} {('%.0f초' % dur) if dur is not None else '?':>8}  "
                       + (f"최대 {max(v)/GiB:.2f} GiB" if v else "샘플 없음"))
         top = max(rows, key=lambda r: r[2])
-        print(f"  전체 최대는 {top[1]} 단계에서 나왔어요 ({top[2]/GiB:.2f} GiB)")
+        print(f"  전체 최대: {top[1]} 단계 ({top[2]/GiB:.2f} GiB)")
     ev = log_file_events(a.dir)
     if ev is not None and w.get("overwrite", (None, None))[0]:
         for ph in ("load", "overwrite"):
@@ -559,7 +643,7 @@ def cmd_pcsummary(a):
     note = nofsync_note(a.dir)
     if note:
         print(note)
-    print(f"  공간 증폭        : {peak/logical:.3f}   (참고. FEMU 계산은 pcfit 의 기울기+고정량을 써요)")
+    print(f"  공간 증폭        : {peak/logical:.3f}   (참고. FEMU 계산은 pcfit 의 기울기+고정량 사용)")
     if lv:
         tot = sum(lv.values())
         print("  레벨별 비중      : " + ", ".join(f"L{k} {v/tot*100:.1f}%" for k, v in sorted(lv.items())))
@@ -567,26 +651,26 @@ def cmd_pcsummary(a):
         deepest = max((k for k, v in lv.items() if v > 0), default=0)
         nl = env("NUM_LEVELS", int, 0)
         if nl and deepest == nl - 1:
-            print(f"  [주의] 맨 아래 L{deepest}까지 데이터가 내려갔어요. 위 레벨과 같은 키가 겹쳐 쌓여"
-                  " 공간 증폭이 커졌을 수 있어요.")
+            print(f"  [주의] 맨 아래 L{deepest}까지 데이터 내려감. 위 레벨과 같은 키가 겹쳐 쌓여"
+                  " 공간 증폭이 커졌을 수 있음.")
     if comp:
         allw = comp + (wal or 0)
         print(f"  host 쓰기(근사)  : {allw/GiB:.1f} GiB (compaction+flush {comp/GiB:.1f}, WAL {(wal or 0)/GiB:.1f};"
               " overwrite 프로세스 전체 = 실행+대기)")
         print(f"  MANIFEST 비중    : {manifest/allw*100:.3f}% (최대 파일 크기 기준 근사)")
     else:
-        print("  [참고] 누적 compaction 줄을 못 찾아 MANIFEST 비중은 계산하지 않았어요.")
+        print("  [참고] 누적 compaction 줄을 못 찾아 MANIFEST 비중 계산 안 함.")
 
 
 def cmd_pcfit(a):
     pts = [(d,) + pc_point(d)[:2] for d in a.dirs]
     if len(pts) < 2:
-        sys.exit("[pilot] 보정 폴더가 두 개 이상 있어야 기울기와 고정량을 맞출 수 있어요.")
+        sys.exit("[pilot] 기울기·고정량을 맞추려면 보정 폴더 2개 이상 필요.")
     xs, ys = [p[1] for p in pts], [p[2] for p in pts]
     mx, my = sum(xs) / len(xs), sum(ys) / len(ys)
     sxx = sum((x - mx) ** 2 for x in xs)
     if sxx <= 0:
-        sys.exit("[pilot] 논리 데이터 크기가 모두 같아서 기울기를 못 구해요.")
+        sys.exit("[pilot] 논리 데이터 크기가 모두 같아 기울기 못 구함.")
     slope = sum((x - mx) * (y - my) for x, y in zip(xs, ys)) / sxx
     fixed = my - slope * mx
     print("== PC 보정 맞추기: 최대 사용량 = 기울기 x 논리 데이터 + 고정량 ==")
@@ -594,11 +678,11 @@ def cmd_pcfit(a):
         print(f"  {os.path.basename(os.path.normpath(d))}: 논리 {x/GiB:.2f} GiB, 최대 {y/GiB:.2f} GiB"
               f" (공간 증폭 {y/x:.3f}), 식으로 {(slope*x+fixed)/GiB:.2f} GiB")
     if len(pts) == 2:
-        print("  (점이 두 개라 식이 두 점을 그대로 지나요)")
+        print("  (점 2개라 식이 두 점을 그대로 지남)")
     if slope < 1 or fixed < 0:
-        print("  [주의] 기울기 < 1 이거나 고정량 < 0 이에요. 측정이 이상할 수 있으니 du.csv 를 확인하세요.")
+        print("  [주의] 기울기 < 1 또는 고정량 < 0. 측정 이상 가능, du.csv 확인.")
     if any(nofsync_note(d) for d, _, _ in pts):
-        print("  [주의] NOFSYNC=1 PC 예비 보정으로 맞춘 값이에요. FEMU 의 검증된 공간 상한이 아니에요.")
+        print("  [주의] NOFSYNC=1 PC 예비 보정으로 맞춘 값. FEMU 의 검증된 공간 상한 아님.")
     print("config.env 에 넣을 값:")
     print(f"SPACE_SLOPE={slope:.4f}")
     print(f"SPACE_FIXED_GIB={fixed/GiB:.3f}")
@@ -730,7 +814,7 @@ def cmd_pctrack(a):
     planned = w * threads if w else None
     err = os.path.join(d, "db_bench_overwrite.stderr")
     if not os.path.exists(err):
-        sys.exit(f"[pilot] {err} 가 없어요 (예전 run 은 stderr 를 따로 안 남겼어요).")
+        sys.exit(f"[pilot] {err} 없음 (예전 run 은 stderr 를 따로 안 남김).")
     prog, samples = parse_progress_and_stats(err)
     final_ops = None    # overwrite db_bench 의 --statistics 카운터 (이 프로세스에서 쓴 키 수, 정확)
     outp = os.path.join(d, "db_bench_overwrite.stdout")
@@ -740,7 +824,7 @@ def cmd_pctrack(a):
             if m:
                 final_ops = int(m.group(1))
     if not samples:
-        sys.exit("[pilot] thread 0 진행 줄이 없어요 (--stats_interval_seconds 확인).")
+        sys.exit("[pilot] thread 0 진행 줄 없음 (--stats_interval_seconds 확인).")
     w = phase_windows(d)
     t_start = w["overwrite"][0] or samples[0]["start"]      # DB 열린 시각 (없으면 진행 줄로 추정)
     t_exec_end = w["overwrite"][1]                           # 결과 줄 시각 (없으면 None)
@@ -781,7 +865,7 @@ def cmd_pctrack(a):
     xd = _dur(w.get("overwrite"))
     print(f"  overwrite 실행 구간: DB 열림 ~ 결과 줄 = {xd/60:.1f}분" if xd is not None else
           "  overwrite 실행 구간: 경계 이벤트 없음 (예전 run) -> 진행 줄로 추정")
-    print(f"  진행 샘플 {len(samples)}개 (thread 0 진행 줄마다 1개). 연산 수는 스레드별 진행 줄을 보간한 추정이에요.")
+    print(f"  진행 샘플 {len(samples)}개 (thread 0 진행 줄마다 1개). 연산 수 = 스레드별 진행 줄 보간 추정.")
     print(f"  레벨별 크기 통계(--stats_per_interval): {'있음' if has_stats else '없음 (누락)'}")
     print(f"  끝난 뒤 완료 연산 수 (statistics 카운터, 정확): "
           + (f"{final_ops:,} = {final_ops/n:.6f}N (3N 대비 {final_ops - 3 * n:+,})" if final_ops is not None else "(없음 - 누락)"))
@@ -796,7 +880,7 @@ def cmd_pctrack(a):
         if i is None:
             last = rows[-1]
             tail = (f" 끝난 뒤 정확한 완료 수는 {final_ops:,} = {final_ops/n:.4f}N 이라 {k}N 은 마지막 진행 샘플"
-                    f" (경과 {last['elapsed_s']/60:.1f}분, 추정 {last['x_N']:.3f}N) 뒤, overwrite 가 끝나기 전 어딘가예요"
+                    f" (경과 {last['elapsed_s']/60:.1f}분, 추정 {last['x_N']:.3f}N) 뒤, overwrite 가 끝나기 전 어딘가"
                     " (시각은 그 범위로만 알 수 있음)") if final_ops is not None and final_ops >= k * n else ""
             print(f"  {k}배: 진행 샘플 안에서는 {k}N 에 닿지 않음 (마지막 추정 {last['ops_est']:,.0f}회).{tail}")
             continue
@@ -853,9 +937,9 @@ def cmd_pctrack(a):
 #   - max_bytes_for_level_multiplier 는 %f (10.000000)
 #   - 압축 이름은 CompressionTypeToString (kNoCompression -> "NoCompression").
 #     compression_per_level 이 비어 있으면 "Options.compression: X" 한 줄만,
-#     비어 있지 않으면 "Options.compression[i]: X" 가 레벨마다 찍혀요.
+#     비어 있지 않으면 "Options.compression[i]: X" 가 레벨마다 찍힘.
 #   - bottommost_compression 이 kDisableCompressionOption 이면 "Disabled" (= 따로 안 정함, 위 압축을 따름)
-#   - delayed_write_rate 는 콜론 앞에 공백이 있어요 ("Options.delayed_write_rate : 16777216")
+#   - delayed_write_rate 는 콜론 앞에 공백 있음 ("Options.delayed_write_rate : 16777216")
 OPT_LINE = re.compile(r"^\S+\s+\S+\s+(?:\(Original Log Time [^)]*\)\s+)?"
                       r"Options\.([A-Za-z0-9_.]+(?:\[\d+\])?)\s*:\s*(.*?)\s*$")
 COMPRESSION_NAMES = {"none": "NoCompression", "snappy": "Snappy", "zlib": "Zlib", "bzip2": "BZip2",
@@ -863,7 +947,7 @@ COMPRESSION_NAMES = {"none": "NoCompression", "snappy": "Snappy", "zlib": "Zlib"
 
 
 def parse_log_options(path):
-    """LOG 에서 옵션 덤프를 읽어 {키: [값, ...]} 와 CF 구간이 있었는지를 돌려줘요 (DB pointer 줄에서 멈춤)."""
+    """LOG 옵션 덤프 -> ({키: [값, ...]}, CF 구간 유무). DB pointer 줄에서 멈춤."""
     vals, cf_seen = {}, False
     for line in open(path, errors="replace"):
         if "Options for column family [default]" in line:
@@ -993,6 +1077,29 @@ def phase_delta(rows, phase, tail_frac=None):
     return h, m
 
 
+def phase_slice(rows, phase, lo, hi):
+    """phase 구간 샘플의 [lo, hi] 비율 사이 (host, media) 증가량. 샘플이 6개보다 적으면 None."""
+    rs = [r for r in rows if r["phase"] == phase]
+    if len(rs) < 6:
+        return None
+    a, b = rs[int((len(rs) - 1) * lo)], rs[int((len(rs) - 1) * hi)]
+    h = int(b["host_bytes"]) - int(a["host_bytes"])
+    m = int(b["media_bytes"]) - int(a["media_bytes"])
+    return (h, m) if h > 0 else None
+
+
+def last_invalid_pid(path):
+    """usage.csv 마지막 줄의 잘못된 PID 쓰기 수. 기록이 없으면 None."""
+    if not os.path.exists(path):
+        return None
+    last = None
+    for r in csv.DictReader(open(path)):
+        v = r.get("invalid_pid_cmds")
+        if v not in (None, "", "-1"):
+            last = int(v)
+    return last
+
+
 def femu_ruh_shares(path):
     """ruh_usage.csv(RUH_METHOD=femu)의 overwrite 구간 처음·끝 차이로 RUH별 (host 비율, media 비율)."""
     if not os.path.exists(path):
@@ -1028,7 +1135,7 @@ def util_stats(path):
 
 def ruh_shares(path, ru_blocks):
     """ruh.csv(RUH_METHOD=fdpstatus)의 RUAMW 변화로 추정한 RUH별 쓰기 비율 (근사).
-    샘플 사이에 RU를 두 개 넘게 쓰면 덜 세요."""
+    샘플 사이에 RU 2개 넘게 쓰면 과소 집계."""
     if not os.path.exists(path):
         return None
     last, acc = {}, {}
@@ -1075,26 +1182,30 @@ def cmd_summary(a):
         full = phase_delta(rows, "overwrite")
         tail = phase_delta(rows, "overwrite", tail_frac=1 / 3)
         if not full or full[0] <= 0 or not tail or tail[0] <= 0:
-            print(f"[건너뜀] {name}: overwrite 구간 카운터가 부족해요")
+            print(f"[건너뜀] {name}: overwrite 구간 카운터 부족")
             continue
         femu = femu_ruh_shares(os.path.join(d, "ruh_usage.csv"))
+        mid = phase_slice(rows, "overwrite", 1 / 3, 2 / 3)
         res.append({
             "run": name, "policy": policy, "util": util, "rep": rep,
             "host_gib": full[0] / GiB, "media_gib": full[1] / GiB,
             "waf": full[1] / full[0],
             "waf_tail": tail[1] / tail[0],
-            # RUAMW 는 LBA 단위라, run마다 장치에서 읽어 둔 LBA 크기로 RU 크기를 LBA 수로 바꿔요
+            # 가운데 1/3 WAF: 뒤 1/3 과 비슷하면 GC 안정 상태
+            "waf_mid": mid[1] / mid[0] if mid else None,
+            "invalid": last_invalid_pid(os.path.join(d, "usage.csv")),
+            # RUAMW 는 LBA 단위 -> run별 lba_bytes 로 RU 크기를 LBA 수로 환산
             "ruh": ({p: s[0] for p, s in femu.items()} if femu
                     else ruh_shares(os.path.join(d, "ruh.csv"), int(ru_bytes / run_lba_bytes(d)))),
             "ruh_exact": femu is not None,
             "ruh_media": {p: s[1] for p, s in femu.items()} if femu else None,
             "used": util_stats(os.path.join(d, "usage.csv")),
-            # 대기·LOG 저장 중 장치 쓰기: 주 WAF 와 뒤 1/3 에서 빼고 따로 보여 줘요
+            # 대기·LOG 저장 중 장치 쓰기: 주 WAF·뒤 1/3 에서 빼고 따로 표시
             "wait": phase_delta(rows, "overwrite_wait"),
             "logsave": phase_delta(rows, "overwrite_logsave"),
         })
     if not res:
-        sys.exit("[pilot] 요약할 run이 없어요.")
+        sys.exit("[pilot] 요약할 run 없음.")
 
     def pct(x):
         return "-" if x is None else f"{x*100:.1f}%"
@@ -1111,7 +1222,7 @@ def cmd_summary(a):
     if any(r["ruh_media"] for r in res):
         print()
         print("RUH별 media 비율 (그 RUH의 host 쓰기 + 그 RUH가 가진 RU를 GC로 옮긴 양, overwrite 구간)")
-        print("  II에서는 다시 옮겨지는 GC 데이터가 마지막 RUH에 잡혀요. 데이터 종류별 GC 비용이 아니에요.")
+        print("  II에서는 다시 옮겨지는 GC 데이터가 마지막 RUH에 잡힘. 데이터 종류별 GC 비용 아님.")
         for r in res:
             if r["ruh_media"]:
                 print(f"  {r['run']:<20}" + " ".join(f"{p}:{s*100:.0f}%" for p, s in r["ruh_media"].items()))
@@ -1123,7 +1234,27 @@ def cmd_summary(a):
             print(f"  {r['run']:<20} 대기 " + (f"{wv[0]/GiB:.2f} / {wv[1]/GiB:.2f}" if wv else "-")
                   + "   LOG 저장 " + (f"{lv[0]/GiB:.2f} / {lv[1]/GiB:.2f}" if lv else "-"))
     if not any(r["used"] for r in res):
-        print("[참고] 실제 사용률 기록이 없어요 (usage.csv 없음). RUH_METHOD=femu 로 돌리면 남아요.")
+        print("[참고] 실제 사용률 기록 없음 (usage.csv 없음). RUH_METHOD=femu 로 돌리면 남음.")
+
+    # 덮어쓰기 1배로 GC 안정 상태 도달 여부: 가운데 1/3 vs 뒤 1/3 WAF 차이
+    tol = env("STABLE_TOL", float, 0.05)
+    print()
+    print(f"덮어쓰기 안정 확인 (가운데 1/3 WAF vs 뒤 1/3 WAF, 차이 {tol*100:.0f}% 넘으면 '아직 변하는 중')")
+    for r in res:
+        if r["waf_mid"] is None:
+            print(f"  {r['run']:<20} 샘플이 모자라 확인 못 함")
+            continue
+        diff = abs(r["waf_mid"] - r["waf_tail"]) / r["waf_tail"]
+        print(f"  {r['run']:<20} {r['waf_mid']:.3f} -> {r['waf_tail']:.3f}  ({diff*100:.1f}%)"
+              + ("" if diff <= tol else "  아직 변하는 중: 판정에 쓰기 전에 같이 보기"))
+
+    # 잘못된 PID 로 온 쓰기 (장치가 handle 0 으로 보냄): 0 아니면 그 run 폐기
+    bad = [r for r in res if r["invalid"]]
+    if bad:
+        print()
+        for r in bad:
+            print(f"[경고] {r['run']}: 잘못된 PID 쓰기 {r['invalid']}번. 이 run 은 판정에서 제외.")
+        res = [r for r in res if not r["invalid"]]
     print()
 
     # 같은 (정책, 사용률)의 반복은 WAF(뒤 1/3)를 평균
@@ -1141,7 +1272,7 @@ def cmd_summary(a):
             print(f"사용률 {u:.2f}: Lan Static이 Single PID보다 Media를 {gains[u]*100:.1f}% 적게 씀"
                   f" (뒤 1/3 기준, 반복 {n}번 평균), Lan Static에 남은 최대 여지"
                   f" 1-1/WAF = {(1-1/waf[('lan', u)])*100:.1f}%")
-    # 목표 사용률은 PC 공간 증폭으로 계산한 값이라, 장치에서 실제로 얼마나 찼는지 같이 봐요
+    # 목표 사용률은 PC 공간 증폭 기반 계산값 -> 장치 실제 최고 사용률도 같이 표시
     peaks = {}
     for r in res:
         if r["used"]:
@@ -1150,14 +1281,14 @@ def cmd_summary(a):
         print(f"  목표 {u*100:.0f}%의 실제 최고 사용률: "
               + ", ".join(f"{name} {x*100:.1f}%" for name, x in peaks[u]))
     if len(gains) < 2:
-        print("판정: 사용률 두 개의 single·lan 결과가 다 있어야 판정해요.")
+        print("판정: 사용률 두 개의 single·lan 결과가 다 있어야 판정 가능.")
         return
     lo, hi = min(gains), max(gains)
     print()
     if gains[lo] < min_gain:
-        print(f"판정 보류: {lo*100:.0f}%에서 이득이 {gains[lo]*100:.1f}%로 최소 기준 {min_gain*100:.0f}%보다 작아요.")
-        print("  -> 비율을 볼 수 없어요. FEMU에서 FDP 이득 자체가 작게 나오는 이유(PID가 실제로 나뉘어 도착하는지,")
-        print("     OP·RU 크기, 카운터)를 먼저 확인해 주세요.")
+        print(f"판정 보류: {lo*100:.0f}%에서 이득이 {gains[lo]*100:.1f}%로 최소 기준 {min_gain*100:.0f}%보다 작음.")
+        print("  -> 비율 의미 없음. FEMU에서 FDP 이득 자체가 작은 이유(PID가 실제로 나뉘어 도착하는지,")
+        print("     OP·RU 크기, 카운터)부터 확인.")
     else:
         ratio = gains[hi] / gains[lo]
         print(f"이득 비율 = {hi*100:.0f}% 이득 / {lo*100:.0f}% 이득 = {ratio:.2f}"
@@ -1165,16 +1296,16 @@ def cmd_summary(a):
         hi_reps = min(nrep.get(("single", hi), 0), nrep.get(("lan", hi), 0))
         if abs(ratio - ratio_cut) <= band:
             if hi_reps < 2:
-                print(f"판정: 경계예요. {hi*100:.0f}% 두 run을 한 번 더 돌려 주세요:")
+                print(f"판정: 경계. {hi*100:.0f}% 두 run 한 번 더 돌릴 것:")
                 print(f"  REP=2 ./03_host_loop.sh \"single lan\" {hi}")
             else:
-                print("판정: 반복해도 여전히 경계예요. 무너짐이 있다고도 없다고도 말하기 어려워요 -> 같이 보고 정하기.")
+                print("판정: 반복해도 여전히 경계. 무너짐 유무 판단 어려움 -> 같이 보고 정하기.")
         elif ratio < ratio_cut:
-            print("판정: 높은 사용률에서 FDP 이득이 절반 아래로 줄었어요 -> Lan처럼 무너짐이 FEMU에서도 보임. A 방향의 여지 있음.")
+            print("판정: 높은 사용률에서 FDP 이득이 절반 아래로 줄어듦 -> Lan처럼 무너짐이 FEMU에서도 보임. A 방향의 여지 있음.")
         else:
-            print("판정: 높은 사용률에서도 FDP 이득이 크게 줄지 않았어요.")
+            print("판정: 높은 사용률에서도 FDP 이득이 크게 줄지 않음.")
             print("  -> 공간 증폭·사용률이 의도대로 됐는지 확인하고, 그래도 같으면 zipfian workload로 한 번 더 시도.")
-    print("주의: 방향만 보는 결과예요. 숫자를 논문에 그대로 쓰지 마세요.")
+    print("주의: 방향만 보는 결과. 숫자를 논문에 그대로 쓰지 말 것.")
 
 
 def main():
@@ -1189,6 +1320,10 @@ def main():
     sp.add_parser("ruh")
     sp.add_parser("lbasize")
     sp.add_parser("ruhtypes")
+    p = sp.add_parser("devcheck")
+    p.add_argument("policy", choices=["single", "lan"])
+    p.add_argument("out")
+    sp.add_parser("pidcheck")
     p = sp.add_parser("pcsummary")
     p.add_argument("dir")
     p = sp.add_parser("tsw")
@@ -1213,6 +1348,7 @@ def main():
     a = ap.parse_args()
     {"calc": cmd_calc, "get": cmd_get, "counters": cmd_counters, "usage": cmd_usage,
      "ruh": cmd_ruh, "lbasize": cmd_lbasize, "ruhtypes": cmd_ruhtypes,
+     "devcheck": cmd_devcheck, "pidcheck": cmd_pidcheck,
      "pcsummary": cmd_pcsummary, "pcfit": cmd_pcfit, "optcheck": cmd_optcheck, "pctrack": cmd_pctrack,
      "tsw": cmd_tsw, "logopen": cmd_logopen, "phasetimes": cmd_phasetimes,
      "summary": cmd_summary}[a.cmd](a)

@@ -14168,7 +14168,7 @@ static void femu_fdp_usage(FemuCtrlState *c, uint64_t log, uint8_t *page)
     g_assert_cmphex(FEMU_SC(femu_get_log(c, FEMU_LOG_FEMU_FDP_USAGE, log,
                                          64 + 4 * 32, 0)), ==, NVME_SUCCESS);
     qtest_memread(c->pdev->bus->qts, log, page, 64 + 4 * 32);
-    g_assert_cmpuint(lduw_le_p(page), ==, 1);
+    g_assert_cmpuint(lduw_le_p(page), ==, 2);
     g_assert_cmpuint(lduw_le_p(page + 2), ==, 4);
     g_assert_cmpuint(ldl_le_p(page + 4), ==, 4096);
 }
@@ -14284,6 +14284,18 @@ static void femu_test_fdp_usage_log(void *obj, void *data,
     g_assert_cmphex(FEMU_SC(femu_get_log(&c, FEMU_LOG_FEMU_FDP_USAGE, log,
                                          4, 64 + 4 * 32)), ==,
                     NVME_INVALID_FIELD);
+
+    /*
+     * A write naming placement 9, which the namespace's four handles do not
+     * have, is counted and lands through placement handle 0.
+     */
+    g_assert_cmpuint(ldq_le_p(page + 24), ==, 0);
+    g_assert_cmphex(FEMU_SC(femu_write_pages_placed(&c, 0, 1, buf, list, 9)),
+                    ==, NVME_SUCCESS);
+    memcpy(one, page + 64, 8);
+    femu_fdp_usage(&c, log, page);
+    g_assert_cmpuint(ldq_le_p(page + 24), ==, 1);
+    g_assert_cmpuint(ldq_le_p(page + 64), ==, ldq_le_p(one) + 4096);
 
     guest_free(alloc, qlog);
     guest_free(alloc, log);

@@ -266,6 +266,13 @@ typedef struct NvmeEnduranceGroup {
         uint64_t hbmw[2];
         uint64_t mbmw[2];
         uint64_t mbe[2];
+        /*
+         * Write commands that named a placement identifier their namespace
+         * does not have, placed through placement handle 0 instead. Counted
+         * whatever the event filter says, as the event ring keeps only the
+         * last NVME_FDP_MAX_EVENTS. Atomic: callers may hold stats_lock.
+         */
+        uint64_t invalid_pid_cmds;
 
         bool enabled;
 
@@ -1338,15 +1345,17 @@ typedef struct FemuStatsLog {
  * charged to it (its host writes and the collection of its units, the
  * counters 22h sums), and the valid pages in the units the handle owns now.
  * An initially isolated handle's collected data sits in units of the last
- * handle, so its live pages are counted there.
+ * handle, so its live pages are counted there. Version 2 adds the count of
+ * write commands whose placement identifier the namespace did not have.
  */
 typedef struct QEMU_PACKED FemuFdpUsageLog {
-    uint16_t    version;            /* 1 */
+    uint16_t    version;            /* 2 */
     uint16_t    nruh;               /* descriptors that follow */
     uint32_t    page_bytes;         /* flash page size */
     uint64_t    valid_pages;        /* valid pages on the media */
     uint64_t    capacity_bytes;     /* logical capacity of the FDP namespaces */
-    uint8_t     rsvd24[40];
+    uint64_t    invalid_pid_cmds;   /* writes placed through handle 0 instead */
+    uint8_t     rsvd32[32];
 } FemuFdpUsageLog;
 
 typedef struct QEMU_PACKED FemuFdpUsageDescr {

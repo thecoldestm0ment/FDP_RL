@@ -1,4 +1,6 @@
 #include <sys/syscall.h>
+#include <sys/mman.h>
+#include <fcntl.h>
 #include "../nvme.h"
 
 /* Coperd: FEMU Memory Backend (mbe) for emulated SSD */
@@ -53,14 +55,62 @@ static void mbe_numa_bind(void *addr, int64_t len)
 }
 
 /*
+ * FEMU_MBE_FILE=<path>: keep the backend in a new file mapped shared instead
+ * of in anonymous memory, so a device larger than the host's free RAM runs
+ * with the page cache holding what it can. The file must not exist (each
+ * start makes a fresh, zeroed one) and is neither pinned nor NUMA-bound.
+ * Returns -1 when the file cannot be made or mapped.
+ */
+static int init_file_backend(SsdDramBackend *b, const char *file)
+{
+    b->file_fd = open(file, O_RDWR | O_CREAT | O_EXCL, 0600);
+    if (b->file_fd < 0) {
+        femu_err("FEMU_MBE_FILE %s: cannot create it (%s); it must not "
+                 "exist yet\n", file, strerror(errno));
+        return -1;
+    }
+    if (ftruncate(b->file_fd, b->size) < 0) {
+        femu_err("FEMU_MBE_FILE %s: cannot size it to %" PRId64 " MiB (%s)\n",
+                 file, b->size / MiB, strerror(errno));
+        close(b->file_fd);
+        unlink(file);
+        return -1;
+    }
+    b->logical_space = mmap(NULL, b->size, PROT_READ | PROT_WRITE, MAP_SHARED,
+                            b->file_fd, 0);
+    if (b->logical_space == MAP_FAILED) {
+        femu_err("FEMU_MBE_FILE %s: cannot map it (%s)\n", file,
+                 strerror(errno));
+        b->logical_space = NULL;
+        close(b->file_fd);
+        unlink(file);
+        return -1;
+    }
+    femu_log("backend: %" PRId64 " MiB in file %s\n", b->size / MiB, file);
+    return 0;
+}
+
+/*
  * Returns -1, with *mbe NULL, when the host cannot give the backend its
  * memory, so realize can refuse the device instead of aborting QEMU.
  */
 int init_dram_backend(SsdDramBackend **mbe, int64_t nbytes)
 {
     SsdDramBackend *b = g_malloc0(sizeof(SsdDramBackend));
+    const char *file = getenv("FEMU_MBE_FILE");
 
     b->size = nbytes;
+    b->file_fd = -1;
+    if (file && file[0]) {
+        if (init_file_backend(b, file)) {
+            g_free(b);
+            *mbe = NULL;
+            return -1;
+        }
+        *mbe = b;
+        backend_init_range_locks(b);
+        return 0;
+    }
     b->logical_space = g_try_malloc0(nbytes);
     if (!b->logical_space) {
         g_free(b);
@@ -118,7 +168,10 @@ void free_dram_backend(SsdDramBackend *b)
     if (!b) {
         return;
     }
-    if (b->logical_space) {
+    if (b->logical_space && b->file_fd >= 0) {
+        munmap(b->logical_space, b->size);
+        close(b->file_fd);
+    } else if (b->logical_space) {
         munlock(b->logical_space, b->size);
         g_free(b->logical_space);
     }

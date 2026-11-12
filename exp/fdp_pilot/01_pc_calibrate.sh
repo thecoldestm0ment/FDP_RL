@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
 # =====================================================================
-# 01_pc_calibrate.sh — 인구 담당. PC(일반 파일시스템)에서 FEMU와 같은 설정으로 돌려
-#   1) 최대 사용량과 논리 데이터 (두 사용률로 SPACE_SLOPE, SPACE_FIXED_GIB 를 맞춤)
-#   2) 레벨별 데이터 비중 (Lan과 구조가 비슷한지)
+# 01_pc_calibrate.sh — 인구 담당. PC(일반 파일시스템)에서 FEMU와 같은 설정으로 측정:
+#   1) 최대 사용량과 논리 데이터 (두 사용률로 SPACE_SLOPE, SPACE_FIXED_GIB 맞춤)
+#   2) 레벨별 데이터 비중 (Lan과 구조 비교)
 #   3) MANIFEST 쓰기 비중
-#   4) 걸리는 시간
-# 을 재요. pilot.py pcfit 결과로 config.env 의 SPACE_SLOPE·SPACE_FIXED_GIB 를 채우면
-# FEMU에서 공간 부족 없이 돌릴 수 있어요.
+#   4) 소요 시간
+# pilot.py pcfit 결과를 config.env SPACE_SLOPE·SPACE_FIXED_GIB 에 넣으면 FEMU에서 공간 부족 없이 실행.
 #
 #   ./01_pc_calibrate.sh            TARGET_UTILS 의 모든 사용률로 실행
 #   ./01_pc_calibrate.sh 0.70       한 사용률만
@@ -26,7 +25,7 @@
 # =====================================================================
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
-OVERWRITE_MULT_FROM_ENV="${OVERWRITE_MULT:-}"     # config.env 를 읽기 전에 밖에서 받은 값을 기록
+OVERWRITE_MULT_FROM_ENV="${OVERWRITE_MULT:-}"     # config.env 읽기 전, 밖에서 받은 값 기록
 set -a; . "$HERE/config.env"; set +a
 . "$HERE/lib/dbbench_args.sh"
 . "$HERE/lib/runlib.sh"
@@ -34,9 +33,9 @@ set -a; . "$HERE/config.env"; set +a
 DB_BENCH="$WORK/bin/db_bench_pc"
 PC_DB_DIR="${PC_DB_DIR:-$WORK/pcdb}"
 SCALE="${SCALE:-1}"
-[[ -x "$DB_BENCH" ]] || { echo "먼저 ./00_build.sh pc 를 실행하세요."; exit 1; }
+[[ -x "$DB_BENCH" ]] || { echo "먼저 ./00_build.sh pc 실행 필요."; exit 1; }
 
-# du 샘플 한 줄: <결과> <phase>. LOG 파일은 빼요 (TorFS에서 FDP 장치에 안 써져서)
+# du 샘플 한 줄: <결과> <phase>. LOG 파일 제외 (TorFS에선 FDP 장치에 안 써짐)
 du_sample() {
   python3 - "$PC_DB_DIR" "$2" >> "$1/du.csv" <<'PYEOF'
 import os, sys, time
@@ -60,8 +59,8 @@ UTILS="${1:-$TARGET_UTILS}"
 for U in $UTILS; do
   N_FULL=$(python3 "$HERE/pilot.py" get "$U" N)
   W_FULL=$(python3 "$HERE/pilot.py" get "$U" overwrite_writes_per_thread)
-  # SCALE 이 1이 아니면 키 수만 줄이고, 스레드당 writes 는 줄인 N 으로 다시 올림해서 계산해요
-  #   (W_FULL x SCALE 을 버림하면 W x THREADS 가 OVERWRITE_MULT x N 보다 조금 모자랄 수 있어서)
+  # SCALE != 1: 키 수만 줄이고, 스레드당 writes 는 줄인 N 으로 다시 올림 계산
+  #   (W_FULL x SCALE 버림이면 W x THREADS 가 OVERWRITE_MULT x N 보다 모자랄 수 있음)
   if [[ "$SCALE" == "1" ]]; then N=$N_FULL; W=$W_FULL; else
     N=$(python3 -c "print(int($N_FULL*$SCALE))")
     W=$(python3 -c "import math; print(math.ceil($OVERWRITE_MULT*$N/$THREADS))")
@@ -106,4 +105,4 @@ for U in $UTILS; do
 done
 echo
 echo "[pc] 끝. 두 사용률이 다 끝났으면: python3 pilot.py pcfit $RESULTS/pc_calib_u0.70 $RESULTS/pc_calib_u0.93"
-echo "     출력된 SPACE_SLOPE·SPACE_FIXED_GIB 를 config.env 에 넣고 python3 pilot.py calc 로 N 을 확인하세요."
+echo "     출력된 SPACE_SLOPE·SPACE_FIXED_GIB 를 config.env 에 넣고 python3 pilot.py calc 로 N 확인."

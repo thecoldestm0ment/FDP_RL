@@ -1,12 +1,12 @@
 # 01_pc_calibrate.sh(PC)·02_femu_run.sh(FEMU) 공통: db_bench 한 프로세스 실행 + 단계 경계 기록 + 실효 옵션 확인.
-#   source 해서 씁니다. HERE(스크립트 폴더)와 config.env 값이 있어야 해요.
+#   source 해서 씀. HERE(스크립트 폴더)와 config.env 값 필요.
 #
-# 단계(phase) 이름. 프로세스 하나(load 또는 overwrite)를 다시 열지 않고, 출력에 찍은 시각으로 나눠요:
+# 단계(phase) 이름. 프로세스 하나(load|overwrite)를 다시 열지 않고 출력 시각으로 나눔:
 #   <단계>_open     프로세스 시작 ~ DB 열림 (LOG 의 "DB pointer" 줄 시각)
 #   <단계>          실제 실행 (filluniquerandom / overwrite). 끝 = 결과 줄("... micros/op ...")이 나온 시각
 #   <단계>_wait     waitforcompaction (+ levelstats·stats 출력, DB 닫기) ~ 프로세스 끝
 #   <단계>_logsave  LOG 앞부분·OPTIONS·LOG 전체 gzip 저장
-#   주 WAF 와 뒤 1/3 은 <단계>=overwrite 구간만으로 계산해요.
+#   주 WAF·뒤 1/3 은 <단계>=overwrite 구간만으로 계산.
 # 기록:
 #   phase_events.txt          "epoch(초.밀리초) 이벤트" 줄들 (경계 시각)
 #   phase                     지금 단계 (샘플러가 1초마다 보고, 바뀌면 바뀌기 전·후 이름으로 한 번씩 샘플)
@@ -14,8 +14,8 @@
 #   db_bench_<단계>.stdout.ts/.stderr.ts 줄마다 받은 시각을 앞에 붙인 사본
 #   cmd_<단계>.txt, options_check_<단계>.txt, rocksdb_LOG_<단계>_head.txt, rocksdb_OPTIONS_<단계>.ini,
 #   rocksdb_LOG_<단계>.gz (SAVE_FULL_LOG=1)
-# 버퍼링: 결과 줄은 db_bench 가 fflush 해요. waitforcompaction 줄은 안 해서 liblinebuf.so 로 stdout 을
-#   줄 버퍼로 만들어요 (lib/linebuf.c). stderr 는 원래 버퍼 없음.
+# 버퍼링: 결과 줄은 db_bench 가 fflush, waitforcompaction 줄은 안 함 -> liblinebuf.so 로 stdout
+#   줄 버퍼링 (lib/linebuf.c). stderr 는 원래 버퍼 없음.
 
 now_ms() { date +%s.%N | cut -c1-14; }
 event()  { printf '%s %s\n' "${3:-$(now_ms)}" "$2" >> "$1/phase_events.txt"; }
@@ -31,9 +31,9 @@ ensure_linebuf() {
 
 # run_dbbench <단계: load|overwrite> <결과 폴더> <DB 로컬 폴더> <명령...>
 #   PC: DB 로컬 폴더 = PC_DB_DIR. FEMU: TORFS_DB_DIR (TorFS 0a6e399 의 TorFS::NewLogger 가 LOG 를
-#   target_ = FileSystem::Default() 로 넘겨서 RocksDB LOG 가 여기 로컬 파일로 생겨요).
-#   시작 전에 이전 단계 LOG 를 지워요 (이미 저장함). RocksDB 는 다시 열 때 LOG 를 LOG.old.* 로 바꾸는데,
-#   없으면 그냥 넘어가요 (오류 무시. TorFS::RenameFile 도 자기 파일이 아니면 로컬 rename 만 하고 OK).
+#   target_ = FileSystem::Default() 로 넘김 -> RocksDB LOG 가 여기 로컬 파일로 생김).
+#   시작 전 이전 단계 LOG 삭제 (이미 저장함). 재열기 시 LOG -> LOG.old.* rename 은 LOG 없으면 무시
+#   (TorFS::RenameFile 도 자기 파일 아니면 로컬 rename 만 하고 OK).
 run_dbbench() {
   local ph="$1" out="$2" dbdir="$3"; shift 3
   local log="$dbdir/LOG" pid rc=0 i pido pide t_open preload
@@ -72,14 +72,14 @@ run_dbbench() {
   } >> "$out/cmd_$ph.txt"
   if ! check_options "$ph" "$log" "$out"; then
     if [[ "${OPTCHECK_STRICT:-1}" == "1" ]]; then
-      echo "[옵션] $ph: 실효 옵션이 기대와 달라요 -> db_bench 를 멈춰요 ($out/options_check_$ph.txt)" >&2
+      echo "[옵션] $ph: 실효 옵션이 기대와 다름 -> db_bench 중단 ($out/options_check_$ph.txt)" >&2
       kill "$pid" 2>/dev/null; wait "$pid" 2>/dev/null; wait "$pido" "$pide" 2>/dev/null
       event "$out" "${ph}_killed_optcheck"
       save_rocksdb_log "$ph" "$dbdir" "$out"
       rm -f "$out/.fo_$ph" "$out/.fe_$ph"
       return 90
     fi
-    echo "[옵션] $ph: 실효 옵션 불일치·누락이 있어요 (OPTCHECK_STRICT=0 이라 계속)" >&2
+    echo "[옵션] $ph: 실효 옵션 불일치·누락 있음 (OPTCHECK_STRICT=0 이라 계속)" >&2
   fi
   wait "$pid" || rc=$?
   event "$out" "${ph}_proc_exit rc=$rc"
@@ -95,7 +95,7 @@ run_dbbench() {
 check_options() {
   local ph="$1" log="$2" out="$3" rc=0
   if [[ ! -s "$log" ]]; then
-    echo "결과: 누락 - LOG 파일이 없어요 ($log). 옵션을 확인하지 못했어요." | tee "$out/options_check_$ph.txt" >&2
+    echo "결과: 누락 - LOG 파일 없음 ($log). 옵션 확인 못 함." | tee "$out/options_check_$ph.txt" >&2
     return 1
   fi
   awk '{print} /DB pointer/{exit}' "$log" > "$out/rocksdb_LOG_${ph}_head.txt"
@@ -105,8 +105,7 @@ check_options() {
 }
 
 # save_rocksdb_log <단계> <DB 로컬 폴더> <결과 폴더>
-#   gzip 은 원본 LOG 를 지우지 않아요 (원본은 DB 폴더에 남고, 다음 단계 시작 때 지워짐).
-#   gzip 하는 동안 원본(DB 폴더)과 압축본(결과 폴더)이 같이 있어요.
+#   gzip -c: 원본 LOG 는 DB 폴더에 남고 다음 단계 시작 때 삭제 (압축 중엔 원본·압축본 공존).
 save_rocksdb_log() {
   local ph="$1" dbdir="$2" out="$3" f
   f=$(ls -t "$dbdir"/OPTIONS-* 2>/dev/null | head -1)
@@ -122,8 +121,8 @@ save_rocksdb_log() {
 }
 
 # start_sampler <결과 폴더> <간격 초> <샘플 함수>
-#   1초마다 phase 를 보고, 바뀌면 바뀌기 전 이름으로 한 번(그 구간의 끝), 바뀐 이름으로 한 번(다음 구간의 시작)
-#   샘플을 찍어요. 안 바뀌면 <간격> 마다 찍어요. phase 파일이 없어지면 끝나요. 샘플 함수는 "<결과> <phase>" 를 받아요.
+#   1초마다 phase 확인. 바뀌면 이전 이름(구간 끝)·새 이름(다음 구간 시작)으로 한 번씩, 아니면 <간격> 마다 샘플.
+#   phase 파일이 없어지면 종료. 샘플 함수 인자: "<결과> <phase>".
 start_sampler() {
   local out="$1" every="$2" fn="$3"
   (
