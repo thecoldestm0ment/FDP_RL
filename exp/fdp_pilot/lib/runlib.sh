@@ -21,6 +21,12 @@ now_ms() { date +%s.%N | cut -c1-14; }
 event()  { printf '%s %s\n' "${3:-$(now_ms)}" "$2" >> "$1/phase_events.txt"; }
 set_phase() { echo "$2" > "$1/phase.tmp" && mv -f "$1/phase.tmp" "$1/phase"; }
 
+sampler_ok() {
+  local out="$1"
+  [[ -z "${SAMPLER:-}" ]] && return 0
+  [[ ! -f "$out/sampler.failed" ]] && kill -0 "$SAMPLER" 2>/dev/null
+}
+
 ensure_linebuf() {
   LINEBUF_LIB="$WORK/bin/liblinebuf.so"
   if [[ ! -f "$LINEBUF_LIB" || "$HERE/lib/linebuf.c" -nt "$LINEBUF_LIB" ]]; then
@@ -53,8 +59,9 @@ run_dbbench() {
   pide=$!
   set_phase "$out" "${ph}_open"; event "$out" "${ph}_proc_start"
   LD_PRELOAD="$preload" "$@" > "$out/.fo_$ph" 2> "$out/.fe_$ph" &
-  pid=$!
+  pid=$!; DB_PID=$pid
   for ((i = 0; i < ${OPTCHECK_WAIT_SEC:-1800}; i++)); do
+    if ! sampler_ok "$out"; then rc=91; kill "$pid" 2>/dev/null || true; break; fi
     grep -q "DB pointer" "$log" 2>/dev/null && break
     kill -0 "$pid" 2>/dev/null || break
     sleep 1
@@ -70,10 +77,19 @@ run_dbbench() {
   { echo "로드된 preload 라이브러리 (/proc/$pid/maps):"
     grep -o '[^ /]*\(linebuf\|nofsync\|stdbuf\)[^ ]*\.so' "/proc/$pid/maps" 2>/dev/null | sort -u | sed 's/^/  /'
   } >> "$out/cmd_$ph.txt"
+  if (( rc == 91 )); then
+    wait "$pid" 2>/dev/null || true
+    wait "$pido" "$pide" 2>/dev/null || true
+    DB_PID=""
+    event "$out" "${ph}_proc_exit rc=$rc"
+    rm -f "$out/.fo_$ph" "$out/.fe_$ph"
+    return "$rc"
+  fi
   if ! check_options "$ph" "$log" "$out"; then
     if [[ "${OPTCHECK_STRICT:-1}" == "1" ]]; then
       echo "[옵션] $ph: 실효 옵션이 기대와 다름 -> db_bench 중단 ($out/options_check_$ph.txt)" >&2
-      kill "$pid" 2>/dev/null; wait "$pid" 2>/dev/null; wait "$pido" "$pide" 2>/dev/null
+      kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true; wait "$pido" "$pide" 2>/dev/null || true
+      DB_PID=""
       event "$out" "${ph}_killed_optcheck"
       save_rocksdb_log "$ph" "$dbdir" "$out"
       rm -f "$out/.fo_$ph" "$out/.fe_$ph"
@@ -81,12 +97,23 @@ run_dbbench() {
     fi
     echo "[옵션] $ph: 실효 옵션 불일치·누락 있음 (OPTCHECK_STRICT=0 이라 계속)" >&2
   fi
-  wait "$pid" || rc=$?
+  while kill -0 "$pid" 2>/dev/null; do
+    if ! sampler_ok "$out"; then
+      echo "[계측] sampler 중단 → workload 중단" >&2
+      rc=91; kill "$pid" 2>/dev/null || true; break
+    fi
+    sleep 1
+  done
+  local child_rc=0
+  wait "$pid" || child_rc=$?
+  DB_PID=""
+  (( rc != 0 )) || rc=$child_rc
   event "$out" "${ph}_proc_exit rc=$rc"
-  wait "$pido" "$pide" 2>/dev/null || true
+  wait "$pido" 2>/dev/null || rc=92
+  wait "$pide" 2>/dev/null || rc=92
   rm -f "$out/.fo_$ph" "$out/.fe_$ph"
   set_phase "$out" "${ph}_logsave"; event "$out" "${ph}_logsave_start"
-  save_rocksdb_log "$ph" "$dbdir" "$out"
+  save_rocksdb_log "$ph" "$dbdir" "$out" || rc=93
   event "$out" "${ph}_logsave_end"
   return $rc
 }
@@ -108,12 +135,12 @@ check_options() {
 #   gzip -c: 원본 LOG 는 DB 폴더에 남고 다음 단계 시작 때 삭제 (압축 중엔 원본·압축본 공존).
 save_rocksdb_log() {
   local ph="$1" dbdir="$2" out="$3" f
-  f=$(ls -t "$dbdir"/OPTIONS-* 2>/dev/null | head -1)
-  [[ -n "$f" ]] && cp "$f" "$out/rocksdb_OPTIONS_$ph.ini"
+  f=$(ls -t "$dbdir"/OPTIONS-* 2>/dev/null | head -1) || f=""
+  if [[ -n "$f" ]]; then cp "$f" "$out/rocksdb_OPTIONS_$ph.ini" || return 1; fi
   if [[ -f "$dbdir/LOG" ]]; then
     echo "$ph LOG 원본 $(stat -c %s "$dbdir/LOG") B" >> "$out/log_sizes.txt"
     if [[ "${SAVE_FULL_LOG:-1}" == "1" ]]; then
-      gzip -c "$dbdir/LOG" > "$out/rocksdb_LOG_$ph.gz"
+      gzip -c "$dbdir/LOG" > "$out/rocksdb_LOG_$ph.gz" || return 1
       echo "$ph LOG gzip $(stat -c %s "$out/rocksdb_LOG_$ph.gz") B" >> "$out/log_sizes.txt"
     fi
   fi
@@ -126,19 +153,23 @@ save_rocksdb_log() {
 start_sampler() {
   local out="$1" every="$2" fn="$3"
   (
-    local last="" cur t_last=0 t
+    trap 'sampler_rc=$?; printf "%s\n" "$sampler_rc" > "$out/sampler.exit"; if ((sampler_rc)); then touch "$out/sampler.failed"; fi' EXIT
+    local last="" cur t_last=0 t sample_rc
     while [[ -f "$out/phase" ]]; do
-      cur=$(cat "$out/phase" 2>/dev/null) || cur="$last"
+      cur=$(cat "$out/phase" 2>/dev/null) || break   # 끝에서 phase 삭제와 겹침 = 정상 종료
       t=$(date +%s)
       if [[ "$cur" != "$last" ]]; then
-        [[ -n "$last" ]] && "$fn" "$out" "$last"
-        "$fn" "$out" "$cur"; last="$cur"; t_last=$t
+        if [[ -n "$last" ]]; then "$fn" "$out" "$last" || { sample_rc=$?; exit "$sample_rc"; }; fi
+        "$fn" "$out" "$cur" || { sample_rc=$?; exit "$sample_rc"; }
+        last="$cur"; t_last=$t
       elif (( t - t_last >= every )); then
-        "$fn" "$out" "$cur"; t_last=$t
+        "$fn" "$out" "$cur" || { sample_rc=$?; exit "$sample_rc"; }
+        t_last=$t
       fi
       sleep 1
     done
-    [[ -n "$last" ]] && "$fn" "$out" "$last"
+    if [[ -n "$last" ]]; then "$fn" "$out" "$last" || { sample_rc=$?; exit "$sample_rc"; }; fi
+    exit 0
   ) &
   SAMPLER=$!
 }

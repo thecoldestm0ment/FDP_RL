@@ -31,6 +31,18 @@ POLICIES="${1:-single lan}"
 UTILS="${2:-$TARGET_UTILS}"
 REP="${REP:-1}"
 SUFFIX=""; [[ "$REP" != "1" ]] && SUFFIX="_r$REP"
+SAMPLER=""; DB_PID=""; RUN=""
+cleanup_guest() {
+  local rc=$?
+  trap - EXIT
+  if [[ -n "$DB_PID" ]]; then kill "$DB_PID" 2>/dev/null || true; wait "$DB_PID" 2>/dev/null || true; fi
+  if [[ -n "$RUN" ]]; then rm -f "$RUN/phase"; fi
+  if [[ -n "$SAMPLER" ]]; then wait "$SAMPLER" 2>/dev/null || true; fi
+  exit "$rc"
+}
+trap cleanup_guest EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 if [[ "${FORCE:-0}" != "1" ]]; then
   echo "장치 $NG_DEV ($NVME_DEV) 데이터 삭제 예정. 계속하려면 yes 입력."
@@ -48,31 +60,49 @@ fi
 #   single 은 RUH 2개·handle 0, lan 은 RUH 6개·handle 0–4, single6 은 RUH 6개·handle 0 (config.env NRUH_*, PHS_*).
 #   정책마다 FEMU를 따로 띄움 -> 한 FEMU로는 그 정책 run만 (03_host_loop.sh).
 
-sample() {   # $1 = run 폴더, $2 = phase 이름 (없으면 phase 파일)
-  local d="$1" ph="${2:-}" ts
+# 장치 읽기 3번까지 재시도 (한 번 실패로 30시간 run을 버리지 않게), 한 번에 60초 제한 (nvme가 멈춰도 영원히 대기 안 함)
+read_try3() {   # $1 = pilot.py 하위 명령
+  local i out
+  for i in 1 2 3; do
+    if out=$(timeout 60 python3 "$HERE/pilot.py" "$1") && [[ -n "$out" ]]; then printf '%s\n' "$out"; return 0; fi
+    echo "[계측] pilot.py $1 실패 ($i/3), 2초 뒤 재시도" >&2
+    sleep 2
+  done
+  return 1
+}
+
+sample() {
+  local d="$1" ph="${2:-}" ts values usage H M V C I pid hb mb live
   [[ -n "$ph" ]] || ph=$(cat "$d/phase" 2>/dev/null || echo end)
   ts=$(now_ms)
-  read -r H M < <(python3 "$HERE/pilot.py" counters)
-  echo "$ts,$ph,$H,$M" >> "$d/counters.csv"
-  case "$RUH_METHOD" in
-    femu)   # 실제 사용률과 RUH별 쓰기량을 한 번에
-            #   첫 줄 = 유효 데이터·용량·잘못된 PID 쓰기 수, 다음 줄부터 RUH별
-      python3 "$HERE/pilot.py" usage 2>/dev/null | {
-        read -r V C I && echo "$ts,$ph,$V,$C,$I" >> "$d/usage.csv"
-        while read -r pid hb mb live; do echo "$ts,$ph,$pid,$hb,$mb,$live" >> "$d/ruh_usage.csv"; done
-      } || true ;;
-    none) ;;
-    *)
-      python3 "$HERE/pilot.py" ruh 2>/dev/null | while read -r pid val; do
-        echo "$ts,$ph,$pid,$val" >> "$d/ruh.csv"
-      done ;;
-  esac
+  values=$(read_try3 counters) || return 71
+  read -r H M <<< "$values"
+  [[ "$H" =~ ^[0-9]+$ && "$M" =~ ^[0-9]+$ ]] || return 71
+  if [[ "$RUH_METHOD" == femu ]]; then
+    usage=$(read_try3 usage) || return 72
+    {
+      read -r V C I || return 72
+      [[ "$V" =~ ^[0-9]+$ && "$C" =~ ^[0-9]+$ && "$I" =~ ^[0-9]+$ ]] || return 72
+      echo "$ts,$ph,$V,$C,$I" >> "$d/usage.csv" || return 72
+      while read -r pid hb mb live; do
+        [[ "$pid" =~ ^[0-9]+$ && "$hb" =~ ^[0-9]+$ && "$mb" =~ ^[0-9]+$ && "$live" =~ ^[0-9]+$ ]] || return 72
+        echo "$ts,$ph,$pid,$hb,$mb,$live" >> "$d/ruh_usage.csv" || return 72
+      done
+    } <<< "$usage"
+  elif [[ "$RUH_METHOD" != none ]]; then
+    usage=$(read_try3 ruh) || return 72
+    while read -r pid val; do echo "$ts,$ph,$pid,$val" >> "$d/ruh.csv" || return 72; done <<< "$usage"
+  fi
+  echo "$ts,$ph,$H,$M" >> "$d/counters.csv" || return 71
 }
 
 for POL in $POLICIES; do
   for U in $UTILS; do
     RUN="$RESULTS/${POL}_u${U}${SUFFIX}"
-    if [[ -e "$RUN" ]]; then echo "[건너뜀] $RUN 이미 있음 (다시 돌리려면 폴더 삭제)"; continue; fi
+    if [[ -e "$RUN" ]]; then
+      mkdir -p "$RESULTS/attempts"
+      mv "$RUN" "$RESULTS/attempts/$(basename "$RUN").$(date -u +%Y%m%dT%H%M%S).${FEMU_RUN_ID:-$$}"
+    fi
     mkdir -p "$RUN"
 
     # 1) FEMU 초기화
@@ -83,6 +113,7 @@ for POL in $POLICIES; do
     else
       echo "[femu] FEMU 새로 띄워 장치 초기화 후 Enter ($POL, 사용률 $U)"; read -r _
     fi
+    python3 "$HERE/pilot.py" freshcheck > "$RUN/fresh-state.txt"
     rm -rf "$TORFS_DB_DIR"; mkdir -p "$TORFS_DB_DIR"
 
     # 2) 정책
@@ -98,6 +129,7 @@ for POL in $POLICIES; do
       echo "[femu] 장치 설정이 $POL 정책과 불일치 ($RUN/device.txt). FEMU를 이 정책으로 띄웠는지 확인."
       exit 1
     fi
+    python3 "$HERE/runcheck.py" guest "$RUN/manifest.json" "$DB_BENCH" "$POL" "$U" "$N" "$W"
     dbbench_common_args "$U"
     write_run_params "$RUN" \
       "script=02_femu_run.sh" "policy=$POL" "util=$U" "REP=$REP" "SCALE=1 (FEMU는 크기 줄이기 없음)" \
@@ -149,7 +181,11 @@ for POL in $POLICIES; do
     grep -A 12 "Level Files Size" "$RUN/db_bench_overwrite.stdout" > "$RUN/levelstats.txt" || true
 
     set_phase "$RUN" end; sleep 2
-    rm -f "$RUN/phase"; wait "$SAMPLER" 2>/dev/null || true
+    rm -f "$RUN/phase"
+    sampler_rc=0; wait "$SAMPLER" || sampler_rc=$?
+    SAMPLER=""
+    if (( sampler_rc )); then echo "[계측] sampler 실패 ($sampler_rc)"; exit "$sampler_rc"; fi
+    [[ "$(cat "$RUN/sampler.exit")" == 0 ]] || exit 71
     python3 "$HERE/pilot.py" phasetimes "$RUN" > "$RUN/time.txt" || true
     unset TORFS_FORCE_PID
     # namespace에 없는 PID로 온 쓰기 = 장치가 handle 0 으로 보냄 -> 이 run 폐기.
@@ -157,6 +193,7 @@ for POL in $POLICIES; do
     if ! python3 "$HERE/pilot.py" pidcheck > "$RUN/pid_check.txt"; then
       cat "$RUN/pid_check.txt"; echo "[femu] 잘못된 PID 쓰기 있음, 이 run 폐기: $RUN"; exit 1
     fi
+    python3 "$HERE/runcheck.py" validate "$RUN" > "$RUN/validation.stdout"
     date +%s > "$RUN/done"
     echo "[femu] 완료: $RUN"
   done

@@ -12,6 +12,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 set -a; . "$HERE/config.env"; set +a
 
+FEMU_RUN_ID="${FEMU_RUN_ID:-$(python3 -c 'import uuid; print(uuid.uuid4())')}"
 POL="${PILOT_POLICY:-}"
 [[ "$POL" == "single" || "$POL" == "lan" || "$POL" == "single6" ]] || { echo "PILOT_POLICY=single|lan|single6 필요"; exit 1; }
 nruh_var="NRUH_$POL"; phs_var="PHS_$POL"
@@ -40,6 +41,7 @@ DEV+=",namespace_phls=$PHS,subsys=fdpss"
 
 CMD=("$FEMU_BIN"
   -name "FEMU-FDP-pilot-$POL,debug-threads=on"
+  -uuid "$FEMU_RUN_ID"
   -enable-kvm -cpu host -smp "$FEMU_GUEST_CPUS" -m "$FEMU_GUEST_MEM"
   -device "$SUBSYS"
   -device virtio-scsi-pci,id=scsi0 -device scsi-hd,drive=hd0

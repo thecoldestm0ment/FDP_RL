@@ -235,7 +235,7 @@ def read_fdpstats(dev, endgrp):
     return _num(h.group(1)), _num(m.group(1))
 
 
-def cmd_counters(a):
+def read_counters():
     method = env("COUNTER_METHOD")
     if method == "fdpstats":
         h, m = read_fdpstats(env("NVME_DEV"), env("FDP_ENDGRP", int))
@@ -244,7 +244,23 @@ def cmd_counters(a):
         h, m = (_num(x) for x in out.split()[:2])
     else:
         sys.exit(f"[pilot] 알 수 없는 COUNTER_METHOD={method}")
-    print(h, m)
+    return h, m
+
+
+def cmd_counters(a):
+    print(*read_counters())
+
+
+def cmd_freshcheck(a):
+    h, m = read_counters()
+    usage = read_femu_usage()
+    clean = h == 0 and m == 0 and usage["valid_bytes"] == 0 and usage["invalid_pid_cmds"] == 0
+    print(json.dumps({"host_bytes": h, "media_bytes": m,
+                      "valid_bytes": usage["valid_bytes"],
+                      "invalid_pid_cmds": usage["invalid_pid_cmds"],
+                      "fresh": clean}, sort_keys=True))
+    if not clean:
+        sys.exit(1)
 
 
 # FEMU 사용량 로그(vendor log C1h, 이 브랜치의 hw/femu/nvme.h FemuFdpUsageLog)
@@ -1076,26 +1092,63 @@ def cmd_optcheck(a):
 
 # ---------------- FEMU 결과 요약 ----------------
 
-def phase_delta(rows, phase, tail_frac=None):
-    rs = [r for r in rows if r["phase"] == phase]
-    if len(rs) < 2:
+def interpolate(points, t):
+    """Linearly interpolate a cumulative counter; never extrapolate."""
+    if not points or t < points[0][0] or t > points[-1][0]:
         return None
-    if tail_frac:
-        rs = rs[int(len(rs) * (1 - tail_frac)):] if len(rs) >= 4 else rs
-    h = int(rs[-1]["host_bytes"]) - int(rs[0]["host_bytes"])
-    m = int(rs[-1]["media_bytes"]) - int(rs[0]["media_bytes"])
-    return h, m
+    i = bisect.bisect_right([p[0] for p in points], t)
+    if i == len(points) or points[i - 1][0] == t:
+        return points[i - 1][1]
+    ta, va = points[i - 1]
+    tb, vb = points[i]
+    return va + (vb - va) * (t - ta) / (tb - ta)
 
 
-def phase_slice(rows, phase, lo, hi):
-    """phase 구간 샘플의 [lo, hi] 비율 사이 (host, media) 증가량. 샘플이 6개보다 적으면 None."""
+def phase_slice(rows, phase, lo, hi, bounds=None):
+    """Counter delta over [lo, hi] of elapsed phase time, not sample index.
+
+    With event bounds, use adjacent counter samples to interpolate the actual
+    execution boundaries. Otherwise legacy diagnostic output uses first/last
+    phase-labelled timestamps. No extrapolation is permitted.
+    """
     rs = [r for r in rows if r["phase"] == phase]
     if len(rs) < 6:
         return None
-    a, b = rs[int((len(rs) - 1) * lo)], rs[int((len(rs) - 1) * hi)]
-    h = int(b["host_bytes"]) - int(a["host_bytes"])
-    m = int(b["media_bytes"]) - int(a["media_bytes"])
-    return (h, m) if h > 0 else None
+    if bounds and None not in bounds:
+        start, end = bounds
+        samples = rows
+    else:
+        start, end = float(rs[0]["ts"]), float(rs[-1]["ts"])
+        samples = rs
+    if end <= start or not 0 <= lo < hi <= 1:
+        return None
+    left, right = start + (end - start) * lo, start + (end - start) * hi
+    deltas = []
+    for key in ("host_bytes", "media_bytes"):
+        points = [(float(r["ts"]), int(r[key])) for r in samples]
+        if any(b[0] < a[0] or b[1] < a[1] for a, b in zip(points, points[1:])):
+            return None
+        first, last = interpolate(points, left), interpolate(points, right)
+        if first is None or last is None:
+            return None
+        deltas.append(last - first)
+    return tuple(deltas) if deltas[0] > 0 else None
+
+
+def phase_delta(rows, phase, tail_frac=None, bounds=None):
+    return phase_slice(rows, phase, 1 - tail_frac if tail_frac else 0, 1, bounds)
+
+
+def time_mean(points, start, end):
+    """Time weighted mean of a linearly interpolated sampled value."""
+    if end <= start:
+        return None
+    first, last = interpolate(points, start), interpolate(points, end)
+    if first is None or last is None:
+        return None
+    selected = [(start, first)] + [p for p in points if start < p[0] < end] + [(end, last)]
+    area = sum((b[0] - a[0]) * (a[1] + b[1]) / 2 for a, b in zip(selected, selected[1:]))
+    return area / (end - start)
 
 
 def last_invalid_pid(path):
@@ -1130,17 +1183,24 @@ def femu_ruh_shares(path):
             for k in sorted(dh) if dh[k] > 0 or dm[k] > 0}
 
 
-def util_stats(path):
-    """usage.csv(RUH_METHOD=femu)에서 실제 사용률 = 유효 데이터 / 용량: (run 전체 최고, overwrite 뒤 1/3 평균)."""
+def util_stats(path, bounds=None):
+    """Peak valid/capacity and time weighted last-third overwrite utilization."""
     if not os.path.exists(path):
         return None
-    u = [(r["phase"], int(r["valid_bytes"]) / int(r["capacity_bytes"]))
-         for r in csv.DictReader(open(path)) if int(r["capacity_bytes"]) > 0]
-    if not u:
+    rows = list(csv.DictReader(open(path)))
+    values = [(float(r["ts"]), int(r["valid_bytes"]) / int(r["capacity_bytes"]))
+              for r in rows if int(r["capacity_bytes"]) > 0]
+    ow = [float(r["ts"]) for r in rows if r["phase"] == "overwrite"]
+    if not values:
         return None
-    ow = [x for p, x in u if p == "overwrite"]
-    tail = ow[int(len(ow) * 2 / 3):] if len(ow) >= 3 else ow
-    return max(x for _, x in u), (sum(tail) / len(tail) if tail else None)
+    if bounds and None not in bounds:
+        start, end = bounds
+    elif ow:
+        start, end = ow[0], ow[-1]
+    else:
+        return max(v for _, v in values), None
+    mean = time_mean(values, start + (end - start) * 2 / 3, end)
+    return max(v for _, v in values), mean
 
 
 def ruh_shares(path, ru_blocks):
@@ -1168,7 +1228,7 @@ GC_LOG_RE = re.compile(r"gc threshold(_high)? \((\d+)%\) (\d+)/(\d+) RU")
 
 def run_gc_units(results, run):
     """run의 FEMU 로그(host_logs/femu_<run>.log)에서 (전체 RU, background 기준 RU, 강제 기준 RU, 출처).
-    로그 없으면 config.env 값으로 계산."""
+    로그 없으면 해당 run manifest 값만 사용. 현재 config는 과거 run의 근거가 아니다."""
     p = os.path.join(results, "host_logs", f"femu_{run}.log")
     bg = hi = total = None
     if os.path.exists(p):
@@ -1183,12 +1243,14 @@ def run_gc_units(results, run):
                         bg = int(m.group(3))
                 if bg is not None and hi is not None:
                     return total, bg, hi, "FEMU 로그"
-    total = env("FEMU_BLKS_PER_PL", int, 0)
-    if not total:
+    try:
+        cfg = json.load(open(os.path.join(results, run, "manifest.json")))["config"]
+        total = int(cfg["FEMU_BLKS_PER_PL"])
+        bg = int((1 - float(cfg["FEMU_GC_THRES"]) / 100) * total)
+        hi = max(int((1 - float(cfg["FEMU_GC_THRES_HIGH"]) / 100) * total), 1)
+        return total, bg, hi, "run manifest"
+    except (OSError, ValueError, KeyError, TypeError):
         return None
-    bg = int((1 - env("FEMU_GC_THRES", float, 75) / 100) * total)
-    hi = max(int((1 - env("FEMU_GC_THRES_HIGH", float, 95) / 100) * total), 1)
-    return total, bg, hi, "config.env"
 
 
 def run_nruh(d):
@@ -1209,12 +1271,12 @@ def overwrite_valid(path):
             if r["phase"] == "overwrite"]
 
 
-def valid_drops(v, min_bytes=0.4 * GiB):
+def valid_drops(v, min_bytes=0.4 * GiB, bounds=None):
     """유효 데이터가 샘플 사이에 min_bytes 넘게 줄어든 지점 [(구간 내 비율, 줄어든 GiB)].
     TorFS 메타 영역 교체(1 GiB 해제)가 이렇게 보임."""
     if len(v) < 2:
         return []
-    t0, t1 = v[0][0], v[-1][0]
+    t0, t1 = bounds if bounds and None not in bounds else (v[0][0], v[-1][0])
     return [((b[0] - t0) / (t1 - t0) if t1 > t0 else 0.0, (a[1] - b[1]) / GiB)
             for a, b in zip(v, v[1:]) if a[1] - b[1] >= min_bytes]
 
@@ -1231,192 +1293,127 @@ def run_lba_bytes(d):
 
 
 def cmd_summary(a):
-    ru_bytes = env("RU_MIB", float) * MiB
-    min_gain = env("MIN_GAIN_LOW", float, 0.10)
-    ratio_cut = env("COLLAPSE_RATIO", float, 0.5)
-    band = env("BORDER_BAND", float, 0.1)
+    import runcheck
     res = []
+    print("판정 구간: overwrite 실행 시간의 마지막 1/3; timestamp 선형 보간")
+    print("WAF = media bytes / host bytes. 총 Media 변화율과 WAF 변화율은 다름.")
     for d in sorted(glob.glob(os.path.join(a.results, "*_u*"))):
-        cpath = os.path.join(d, "counters.csv")
         name = os.path.basename(d)
-        m = RUN_RE.match(name)
-        if not m or not os.path.exists(cpath):
+        match = RUN_RE.match(name)
+        if not match or not os.path.isfile(os.path.join(d, "counters.csv")):
             continue
-        rows = list(csv.DictReader(open(cpath)))
-        policy, util, rep = m.group(1), float(m.group(2)), int(m.group(3) or 1)
-        full = phase_delta(rows, "overwrite")
-        tail = phase_delta(rows, "overwrite", tail_frac=1 / 3)
-        if not full or full[0] <= 0 or not tail or tail[0] <= 0:
-            print(f"[건너뜀] {name}: overwrite 구간 카운터 부족")
+        validation = runcheck.validate(d, require_done=True)
+        if validation["status"] != "VALID":
+            print(f"[INVALID; 판정 제외] {name}: " + "; ".join(validation["errors"]))
             continue
-        femu = femu_ruh_shares(os.path.join(d, "ruh_usage.csv"))
-        mid = phase_slice(rows, "overwrite", 1 / 3, 2 / 3)
-        res.append({
-            "run": name, "policy": policy, "util": util, "rep": rep,
-            "host_gib": full[0] / GiB, "media_gib": full[1] / GiB,
-            "waf": full[1] / full[0],
-            "waf_tail": tail[1] / tail[0],
-            # 가운데 1/3 WAF: 뒤 1/3 과 비슷하면 GC 안정 상태
-            "waf_mid": mid[1] / mid[0] if mid else None,
-            "invalid": last_invalid_pid(os.path.join(d, "usage.csv")),
-            # RUAMW 는 LBA 단위 -> run별 lba_bytes 로 RU 크기를 LBA 수로 환산
-            "ruh": ({p: s[0] for p, s in femu.items()} if femu
-                    else ruh_shares(os.path.join(d, "ruh.csv"), int(ru_bytes / run_lba_bytes(d)))),
-            "ruh_exact": femu is not None,
-            "ruh_media": {p: s[1] for p, s in femu.items()} if femu else None,
-            "used": util_stats(os.path.join(d, "usage.csv")),
-            # 대기·LOG 저장 중 장치 쓰기: 주 WAF·뒤 1/3 에서 빼고 따로 표시
-            "wait": phase_delta(rows, "overwrite_wait"),
-            "logsave": phase_delta(rows, "overwrite_logsave"),
-            "gc": run_gc_units(a.results, name),
-            "nruh": run_nruh(d),
-            "ow_valid": overwrite_valid(os.path.join(d, "usage.csv")),
-        })
+        try:
+            manifest = runcheck.load(os.path.join(d, "manifest.json"))
+            cfg = manifest["config"]
+            key = runcheck.comparison_key(manifest)
+            policy, util = match.group(1), float(match.group(2))
+            if manifest["policy"] != policy or abs(manifest["util"] - util) > 1e-9:
+                raise ValueError("folder and manifest policy/util differ")
+            rows = list(csv.DictReader(open(os.path.join(d, "counters.csv"))))
+            bounds = phase_windows(d).get("overwrite")
+            full = phase_delta(rows, "overwrite", bounds=bounds)
+            tail = phase_delta(rows, "overwrite", 1 / 3, bounds)
+            mid = phase_slice(rows, "overwrite", 1 / 3, 2 / 3, bounds)
+            if not full or not tail or not mid or min(full + tail + mid) <= 0:
+                raise ValueError("phase counter interpolation unavailable")
+            used = util_stats(os.path.join(d, "usage.csv"), bounds)
+            waf_tail, waf_mid = tail[1] / tail[0], mid[1] / mid[0]
+            # 안정 확인은 경고만: 판정에서 빼지 않음 (11/13 결정, 메타 영역 교체로 WAF가 흔들림)
+            drift = abs(waf_mid - waf_tail) / waf_tail
+            stable = drift <= float(cfg.get("STABLE_TOL", .05))
+            no_gc = full[1] <= full[0]
+            status = "VALID" if not no_gc else "INCONCLUSIVE"
+            print(f"{name}: {status}; host {full[0]/GiB:.3f} GiB; total Media {full[1]/GiB:.3f} GiB; "
+                  f"WAF {full[1]/full[0]:.4f}; WAF(시간 뒤1/3) {waf_tail:.4f}; "
+                  f"가운데1/3 {waf_mid:.4f}; 실제 최고 사용률 {used[0]*100:.2f}%")
+            if not stable:
+                print(f"  [주의] 가운데→뒤 1/3 WAF 차 {drift*100:.1f}% > {float(cfg.get('STABLE_TOL', .05))*100:g}%."
+                      " 아직 변하는 중. 판정에는 쓰고 해석 때 같이 봄")
+            if no_gc: print("  GC 쓰기 미관측: GC 메커니즘 판정 보류.")
+            for warning in validation["warnings"]:
+                print("  참고: " + warning)
+            gc = run_gc_units(a.results, name)
+            if gc:
+                total, bg, hi, source = gc
+                print(f"  GC trigger 빈RU {bg}/{hi} of {total} ({source}); 실제 free RU 측정값 아님.")
+            else:
+                print("  GC trigger unknown (해당 run 로그/manifest 근거 없음).")
+            # 여유 RU [추정]: background GC가 빈 RU를 bg개 근처로 유지한다고 보고 계산. 실측 free RU 아님
+            nruh = run_nruh(d)
+            if gc and nruh and used and used[1] is not None:
+                total, bg, hi, _src = gc
+                ru = float(cfg.get("RU_MIB", 128)) * MiB
+                cap = float(cfg.get("DEV_CAPACITY_GIB", 24)) * GiB
+                vru = used[1] * cap / ru
+                room = total - bg - nruh
+                spare = room - vru
+                note = "" if spare > 0 else \
+                    f"; background 기준 못 지킴 → 강제 기준 쪽 여유 {total - hi - nruh - vru:.1f} RU"
+                print(f"  [추정] 여유 RU (뒤 1/3): 전체 {total} - GC 기준 {bg} - 열린 RU {nruh}"
+                      f" - 유효 {vru:.1f} = {spare:.1f} RU ({spare / room * 100:.1f}%){note}")
+            shares = femu_ruh_shares(os.path.join(d, "ruh_usage.csv"))
+            if shares:
+                print("  RUH별 host 비율: " + " ".join(f"{p}:{v[0]*100:.1f}%" for p, v in shares.items()))
+                print("  RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.")
+            drops = valid_drops(overwrite_valid(os.path.join(d, "usage.csv")), bounds=bounds)
+            if drops:
+                print("  유효량 급감 (overwrite 시간 비율): " + ", ".join(f"{f*100:.1f}% -{n:.2f} GiB" for f, n in drops))
+            if status == "VALID":
+                res.append({"run": name, "policy": policy, "util": util, "key": key, "unstable": not stable,
+                            "src": runcheck.source_key(manifest),
+                            "waf_tail": waf_tail, "config": cfg})
+        except (OSError, ValueError, KeyError, TypeError, ZeroDivisionError) as e:
+            print(f"[INVALID; 판정 제외] {name}: {e}")
     if not res:
-        sys.exit("[pilot] 요약할 run 없음.")
-
-    def pct(x):
-        return "-" if x is None else f"{x*100:.1f}%"
-
-    print(f"{'run':<22}{'host GiB':>10}{'media GiB':>11}{'WAF':>7}{'WAF(뒤 1/3)':>13}"
-          f"{'사용률 최고':>12}{'뒤 1/3':>8}  RUH별 host 쓰기 비율")
-    for r in res:
-        ruh = "-" if not r["ruh"] else " ".join(f"{p}:{s*100:.0f}%" for p, s in r["ruh"].items())
-        if r["ruh"] and not r["ruh_exact"]:
-            ruh += " (RUAMW 근사)"
-        peak, used_tail = r["used"] if r["used"] else (None, None)
-        print(f"{r['run']:<22}{r['host_gib']:>10.1f}{r['media_gib']:>11.1f}{r['waf']:>7.3f}{r['waf_tail']:>13.3f}"
-              f"{pct(peak):>12}{pct(used_tail):>8}  {ruh}")
-    if any(r["ruh_media"] for r in res):
-        print()
-        print("RUH별 media 비율 (그 RUH의 host 쓰기 + 그 RUH가 가진 RU를 GC로 옮긴 양, overwrite 구간)")
-        print("  II에서는 다시 옮겨지는 GC 데이터가 마지막 RUH에 잡힘. 데이터 종류별 GC 비용 아님.")
-        for r in res:
-            if r["ruh_media"]:
-                print(f"  {r['run']:<20}" + " ".join(f"{p}:{s*100:.0f}%" for p, s in r["ruh_media"].items()))
-    if any(r["wait"] or r["logsave"] for r in res):
-        print()
-        print("overwrite 실행 뒤 장치 쓰기 (주 WAF·뒤 1/3 에는 안 들어감): host / media GiB")
-        for r in res:
-            wv, lv = r["wait"], r["logsave"]
-            print(f"  {r['run']:<20} 대기 " + (f"{wv[0]/GiB:.2f} / {wv[1]/GiB:.2f}" if wv else "-")
-                  + "   LOG 저장 " + (f"{lv[0]/GiB:.2f} / {lv[1]/GiB:.2f}" if lv else "-"))
-    if not any(r["used"] for r in res):
-        print("[참고] 실제 사용률 기록 없음 (usage.csv 없음). RUH_METHOD=femu 로 돌리면 남음.")
-
-    # 여유 RU 추정: background GC가 빈 RU를 bg개 근처로 유지 -> 데이터 몫 = 전체 - bg - 열린 RU(nruh)
-    #   뒤 1/3 평균 유효량을 빼면 남는 여유. 음수면 background 기준을 못 지켜 강제 기준 쪽으로 내려간 상태
-    if any(r["gc"] and r["nruh"] and r["ow_valid"] for r in res):
-        print()
-        print("여유 RU 추정 (뒤 1/3 평균, 여유 = 전체 - GC 기준 빈 RU - 열린 RU - 유효 데이터)")
-        for r in res:
-            if not (r["gc"] and r["nruh"] and r["ow_valid"]):
-                continue
-            total, bg, hi, src = r["gc"]
-            ov = r["ow_valid"]
-            tail = [b for _t, b in ov[int(len(ov) * 2 / 3):]] or [ov[-1][1]]
-            vru = sum(tail) / len(tail) / ru_bytes
-            room = total - bg - r["nruh"]
-            spare = room - vru
-            note = "" if spare > 0 else f"  background 기준 못 지킴 -> 강제 기준({hi}) 쪽 여유 {total - hi - r['nruh'] - vru:.1f} RU"
-            print(f"  {r['run']:<20} GC 빈 RU {bg}/{hi} of {total} ({src}), 열린 RU {r['nruh']},"
-                  f" 유효 {vru:.1f} RU -> 여유 {spare:.1f} RU ({spare / room * 100:.1f}%){note}")
-
-    # TorFS 메타 영역 교체: 유효 데이터가 약 1 GiB 뚝 떨어짐 -> 여유가 갑자기 늘어 WAF 변동
-    drops = [(r, valid_drops(r["ow_valid"])) for r in res]
-    if any(dl for _r, dl in drops):
-        print()
-        print("유효 데이터 급감 (0.4 GiB 이상, TorFS 메타 영역 교체로 추정): overwrite 진행 비율")
-        for r, dl in drops:
-            if dl:
-                print(f"  {r['run']:<20} " + ", ".join(f"{f*100:.0f}% -{g:.2f} GiB" + (" (뒤 1/3)" if f >= 2 / 3 else "")
-                                                  for f, g in dl))
-
-    # 덮어쓰기 1배로 GC 안정 상태 도달 여부: 가운데 1/3 vs 뒤 1/3 WAF 차이
-    tol = env("STABLE_TOL", float, 0.05)
-    print()
-    print(f"덮어쓰기 안정 확인 (가운데 1/3 WAF vs 뒤 1/3 WAF, 차이 {tol*100:.0f}% 넘으면 '아직 변하는 중')")
-    for r in res:
-        if r["waf_mid"] is None:
-            print(f"  {r['run']:<20} 샘플이 모자라 확인 못 함")
-            continue
-        diff = abs(r["waf_mid"] - r["waf_tail"]) / r["waf_tail"]
-        in_tail = any(f >= 2 / 3 for f, _g in valid_drops(r["ow_valid"]))
-        print(f"  {r['run']:<20} {r['waf_mid']:.3f} -> {r['waf_tail']:.3f}  ({diff*100:.1f}%)"
-              + ("" if diff <= tol else "  아직 변하는 중: 판정에 쓰기 전에 같이 보기")
-              + ("  (뒤 1/3에 메타 영역 교체 있음)" if in_tail else ""))
-
-    # 잘못된 PID 로 온 쓰기 (장치가 handle 0 으로 보냄): 0 아니면 그 run 폐기
-    bad = [r for r in res if r["invalid"]]
-    if bad:
-        print()
-        for r in bad:
-            print(f"[경고] {r['run']}: 잘못된 PID 쓰기 {r['invalid']}번. 이 run 은 판정에서 제외.")
-        res = [r for r in res if not r["invalid"]]
-    print()
-
-    # 같은 (정책, 사용률)의 반복은 WAF(뒤 1/3)를 평균
+        print("판정 보류: 완료·계측·안정성 검증을 통과한 비교 결과 없음.")
+        return
+    keys = {r["key"] for r in res}
+    if len(keys) != 1:
+        print("판정 보류: 컴퓨터·QEMU·빌드·커널·실험 설정이 다른 run이 섞임. 한 컴퓨터·같은 설정 결과만 비교할 것.")
+        return
+    if len({r["src"] for r in res}) > 1:
+        print("[주의] run마다 실행 스크립트 버전이 다름 (실험 설정·빌드는 같음). 버그 수정 등 변경 내용을 같이 기록할 것")
+    unstable = [r["run"] for r in res if r.get("unstable")]
+    if unstable:
+        print("[주의] 아직 변하는 run 포함: " + ", ".join(unstable) + " → 판정 해석 때 같이 볼 것")
     groups = {}
     for r in res:
         groups.setdefault((r["policy"], r["util"]), []).append(r["waf_tail"])
     waf = {k: sum(v) / len(v) for k, v in groups.items()}
-    nrep = {k: len(v) for k, v in groups.items()}
-    utils = sorted({u for _, u in groups})
     gains = {}
-    for u in utils:
+    for u in sorted({r["util"] for r in res}):
         if ("single", u) in waf and ("lan", u) in waf:
             gains[u] = 1 - waf[("lan", u)] / waf[("single", u)]
-            n = min(nrep[("single", u)], nrep[("lan", u)])
-            how = "적게" if gains[u] >= 0 else "더"
-            print(f"사용률 {u:.2f}: gain {gains[u]*100:+.1f}% = lan이 single보다 Media를 {abs(gains[u])*100:.1f}% {how} 씀"
-                  f" (뒤 1/3 기준, 반복 {n}번 평균), lan에 남은 최대 여지"
-                  f" 1-1/WAF = {(1-1/waf[('lan', u)])*100:.1f}%")
-        # 대조 single6 (RUH 6개, handle 0만): 열린 RU 비용과 배치 효과를 나눔
+            print(f"사용률 {u:.2f}: WAF 감소율 {gains[u]*100:+.2f}% = 1 − WAF_lan/WAF_single (시간 뒤1/3)")
         if ("single6", u) in waf and ("single", u) in waf:
-            print(f"  열린 RU 비용 (single6 / single - 1): {(waf[('single6', u)] / waf[('single', u)] - 1)*100:+.1f}%"
-                  "  (RUH 4개를 더 열어 두면 Media가 이만큼 늘어남)")
+            print(f"  추가 열린RU 조건의 WAF 변화율: {(waf[('single6', u)]/waf[('single', u)]-1)*100:+.2f}%")
         if ("single6", u) in waf and ("lan", u) in waf:
-            print(f"  배치 효과 (1 - lan / single6): {(1 - waf[('lan', u)] / waf[('single6', u)])*100:+.1f}%"
-                  "  (열린 RU 수가 같을 때 lan 배치로 줄어든 Media)")
-    # 목표 사용률은 PC 공간 증폭 기반 계산값 -> 장치 실제 최고 사용률도 같이 표시
-    peaks = {}
-    for r in res:
-        if r["used"]:
-            peaks.setdefault(r["util"], []).append((r["run"], r["used"][0]))
-    for u in sorted(peaks):
-        print(f"  목표 {u*100:.0f}%의 실제 최고 사용률: "
-              + ", ".join(f"{name} {x*100:.1f}%" for name, x in peaks[u]))
-    low_target = min(float(x) for x in env("TARGET_UTILS", str, "0.70 0.93").split())
-    if not gains:
-        print("판정: 같은 사용률의 single·lan 결과가 있어야 판정 가능.")
+            print(f"  열린RU 수 동일 조건의 배치 WAF 감소율: {(1-waf[('lan', u)]/waf[('single6', u)])*100:+.2f}%")
+    if .70 not in gains:
+        print("판정 보류: 같은 컴퓨터의 유효한 70% single·lan 짝 필요.")
         return
-    lo = min(gains)
-    if len(gains) < 2 and not (lo == low_target and gains[lo] < min_gain):
-        print(f"판정: 사용률 두 개의 single·lan 결과가 다 있어야 판정 가능 (지금은 {lo:.2f}만 있음).")
+    decision_cfg = res[0]["config"]
+    min_gain = float(decision_cfg.get("MIN_GAIN_LOW", .10))
+    if gains[.70] < min_gain:
+        print(f"판정 보류: 70% WAF 이득이 {min_gain*100:g}% 미만. 93% 본 비교를 진행하지 않음.")
         return
-    hi = max(gains)
-    print()
-    if gains[lo] < min_gain:
-        print(f"판정 보류: {lo*100:.0f}%에서 이득이 {gains[lo]*100:.1f}%로 최소 기준 {min_gain*100:.0f}%보다 작음.")
-        print("  -> 비율 의미 없음. 높은 사용률 run 생략. FEMU에서 FDP 이득 자체가 작은 이유(PID가 실제로 나뉘어 도착하는지,")
-        print("     여유 RU·GC 기준, OP·RU 크기, 카운터)부터 확인.")
+    if .93 not in gains:
+        print("70% 관문 통과. 같은 컴퓨터에서 93% single → lan 진행 가능.")
+        return
+    ratio = gains[.93] / gains[.70]
+    cut, band = float(decision_cfg.get("COLLAPSE_RATIO", .5)), float(decision_cfg.get("BORDER_BAND", .1))
+    print(f"이득 비율 gain(93%)/gain(70%) = {ratio:.3f}")
+    if abs(ratio - cut) <= band:
+        print("판정: 경계. 11/26 이전 추가 반복·새 정책 없이 경계 결과로 보고.")
+    elif ratio < cut:
+        print("판정: 고사용률에서 WAF 이득 감소 관찰 (단일 실행 파일럿).")
     else:
-        ratio = gains[hi] / gains[lo]
-        print(f"이득 비율 = {hi*100:.0f}% 이득 / {lo*100:.0f}% 이득 = {ratio:.2f}"
-              f"  (기준 {ratio_cut:.2f}, 경계 {ratio_cut-band:.2f}~{ratio_cut+band:.2f})")
-        hi_reps = min(nrep.get(("single", hi), 0), nrep.get(("lan", hi), 0))
-        if abs(ratio - ratio_cut) <= band:
-            if hi_reps < 2:
-                print(f"판정: 경계. {hi*100:.0f}% 두 run 한 번 더 돌릴 것:")
-                print(f"  REP=2 ./03_host_loop.sh \"single lan\" {hi}")
-            else:
-                print("판정: 반복해도 여전히 경계. 무너짐 유무 판단 어려움 -> 같이 보고 정하기.")
-        elif ratio < ratio_cut:
-            print("판정: 높은 사용률에서 FDP 이득이 절반 아래로 줄어듦 -> Lan처럼 무너짐이 FEMU에서도 보임. A 방향의 여지 있음.")
-        else:
-            print("판정: 높은 사용률에서도 FDP 이득이 크게 줄지 않음.")
-            print("  -> 공간 증폭·사용률이 의도대로 됐는지 확인하고, 그래도 같으면 zipfian workload로 한 번 더 시도.")
-    print("주의: 방향만 보는 결과. 숫자를 논문에 그대로 쓰지 말 것.")
+        print("판정: 이번 파일럿에서 큰 이득 감소가 관찰되지 않음. 새 workload는 별도 후속 결정.")
+    print("단일 실행 파일럿이며 통계적 우월성이나 열린RU 원인을 확정하지 않음.")
 
 
 def main():
@@ -1427,6 +1424,7 @@ def main():
     g.add_argument("util")
     g.add_argument("field")
     sp.add_parser("counters")
+    sp.add_parser("freshcheck")
     sp.add_parser("usage")
     sp.add_parser("ruh")
     sp.add_parser("lbasize")
@@ -1457,7 +1455,7 @@ def main():
     s = sp.add_parser("summary")
     s.add_argument("results")
     a = ap.parse_args()
-    {"calc": cmd_calc, "get": cmd_get, "counters": cmd_counters, "usage": cmd_usage,
+    {"calc": cmd_calc, "get": cmd_get, "counters": cmd_counters, "freshcheck": cmd_freshcheck, "usage": cmd_usage,
      "ruh": cmd_ruh, "lbasize": cmd_lbasize, "ruhtypes": cmd_ruhtypes,
      "devcheck": cmd_devcheck, "pidcheck": cmd_pidcheck,
      "pcsummary": cmd_pcsummary, "pcfit": cmd_pcfit, "optcheck": cmd_optcheck, "pctrack": cmd_pctrack,
