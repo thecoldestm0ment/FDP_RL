@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =====================================================================
 # 02_femu_run.sh — 지윤 담당. FEMU 게스트 안에서 실행.
-#   정책 2개(single, lan) x 사용률(TARGET_UTILS) 를 한 번씩 돌리고
+#   정책(single, lan, 대조 single6) x 사용률(TARGET_UTILS) 를 한 번씩 돌리고
 #   장치 카운터(host/media 쓰기량)와 RUH별 상태를 SAMPLE_SEC 마다 기록.
 #
 #   sudo -E ./02_femu_run.sh                 전부 (single·lan x 모든 사용률)
@@ -45,7 +45,7 @@ if [[ "$RUH_METHOD" == "femu" ]] && ! python3 "$HERE/pilot.py" usage >/dev/null;
   echo "FEMU 사용량 로그(C1h) 못 읽음. 이 브랜치(fdp-pilot) FEMU인지, NVME_DEV 확인."; exit 1
 fi
 # 정책별 장치 설정(RUH 수, II, placement handle 목록)은 run마다 아래 devcheck 로 확인.
-#   single 은 RUH 2개·handle 0, lan 은 RUH 6개·handle 0–4 (config.env NRUH_*, PHS_*).
+#   single 은 RUH 2개·handle 0, lan 은 RUH 6개·handle 0–4, single6 은 RUH 6개·handle 0 (config.env NRUH_*, PHS_*).
 #   정책마다 FEMU를 따로 띄움 -> 한 FEMU로는 그 정책 run만 (03_host_loop.sh).
 
 sample() {   # $1 = run 폴더, $2 = phase 이름 (없으면 phase 파일)
@@ -86,7 +86,7 @@ for POL in $POLICIES; do
     rm -rf "$TORFS_DB_DIR"; mkdir -p "$TORFS_DB_DIR"
 
     # 2) 정책
-    if [[ "$POL" == "single" ]]; then export TORFS_FORCE_PID=0; else unset TORFS_FORCE_PID; fi
+    if [[ "$POL" == single* ]]; then export TORFS_FORCE_PID=0; else unset TORFS_FORCE_PID; fi
 
     N=$(python3 "$HERE/pilot.py" get "$U" N)
     W=$(python3 "$HERE/pilot.py" get "$U" overwrite_writes_per_thread)
@@ -101,7 +101,7 @@ for POL in $POLICIES; do
     dbbench_common_args "$U"
     write_run_params "$RUN" \
       "script=02_femu_run.sh" "policy=$POL" "util=$U" "REP=$REP" "SCALE=1 (FEMU는 크기 줄이기 없음)" \
-      "TORFS_FORCE_PID=${TORFS_FORCE_PID:-unset}  (single=0, lan=unset -> Lan 패치의 레벨별 hint)" \
+      "TORFS_FORCE_PID=${TORFS_FORCE_PID:-unset}  (single·single6=0, lan=unset -> Lan 패치의 레벨별 hint)" \
       "N(--num)=$N" "W(--writes, 스레드당)=$W" \
       "overwrite 전체 연산 수 = W x THREADS = $((W * THREADS))" \
       "논리 데이터 대비 배수 = W x THREADS / N = $(python3 -c "print(f'{$W*$THREADS/$N:.4f}')")" \

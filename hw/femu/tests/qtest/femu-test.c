@@ -14162,6 +14162,101 @@ static void femu_query_ru_window(QTestState *qts, uint32_t offset,
 
 #define FEMU_LOG_FEMU_FDP_USAGE 0xc1
 
+/*
+ * fdp-pilot device shape (exp/fdp_pilot): 211 units, 192 of them for the
+ * namespace, all handles II. Fill 100%, then overwrite 4x at random through
+ * PIDs 0 .. npids-1; no write may fail and every page must read back last.
+ */
+static void femu_test_pilot_fill(void *obj, void *data, QGuestAllocator *alloc)
+{
+    QFemu *femu = obj;
+    QTestState *qts = femu->dev.bus->qts;
+    FemuCtrlState c = { 0 };
+    const uint32_t npids = GPOINTER_TO_UINT(data);
+    const uint32_t pages = 3072;            /* 12 MiB = 192 units of 16 pages */
+    const uint32_t over = 4 * 3072;
+    uint64_t buf = guest_alloc(alloc, 4096);
+    uint64_t list = guest_alloc(alloc, 4096);
+    uint64_t log = guest_alloc(alloc, 4096);
+    uint64_t mapped, lost, orphans, host = 0, media = 0;
+    uint8_t conf[16 + 64 + 8 * 4];
+    uint8_t use[64 + 8 * 32];
+    uint32_t *ver = g_new0(uint32_t, pages);
+    uint32_t seed = 9, nruh, i, fails = 0;
+    uint32_t min_free = 1u << 30;
+    QDict *rsp, *ns;
+
+    femu_enable(&c, &femu->dev, alloc);
+    femu_create_io_queues(&c);
+
+    g_assert_cmphex(FEMU_SC(femu_endgrp_log(&c, 0x20, 0, log, sizeof(conf))),
+                    ==, NVME_SUCCESS);
+    qtest_memread(qts, log, conf, sizeof(conf));
+    nruh = lduw_le_p(conf + 16 + 8);
+    for (i = 0; i < nruh; i++) {
+        g_assert_cmpuint(conf[16 + 64 + 4 * i], ==, 1);   /* all II */
+    }
+
+    for (i = 0; i < pages + over; i++) {
+        uint32_t pg = i;
+        uint16_t sc;
+
+        seed = seed * 1103515245 + 12345;
+        if (i >= pages) {
+            pg = (seed >> 8) % pages;
+            ver[pg]++;
+        }
+        qtest_writeq(qts, buf, pg);
+        qtest_writeq(qts, buf + 8, ver[pg]);
+        sc = FEMU_SC(femu_write_pages_placed(&c, pg, 1, buf, list,
+                                             (seed >> 4) % npids));
+        fails += sc != NVME_SUCCESS;
+        if (i % 256 == 255) {
+            uint32_t freeu;
+
+            ns = femu_query_ns(qts, "", &rsp);
+            freeu = qdict_get_int(qdict_get_qdict(qdict_get_qdict(ns, "fdp"),
+                                                  "unit-counts"), "free");
+            min_free = MIN(min_free, freeu);
+            qobject_unref(rsp);
+        }
+    }
+    for (i = 0; i < pages; i++) {
+        qtest_writeq(qts, buf, ~0ULL);
+        g_assert_cmphex(FEMU_SC(femu_read_pages(&c, i, 1, buf, list)), ==,
+                        NVME_SUCCESS);
+        g_assert_cmpuint(qtest_readq(qts, buf), ==, i);
+        g_assert_cmpuint(qtest_readq(qts, buf + 8), ==, ver[i]);
+    }
+    femu_ftl_check(qts, &mapped, &lost, &orphans);
+
+    g_assert_cmphex(FEMU_SC(femu_get_log(&c, FEMU_LOG_FEMU_FDP_USAGE, log,
+                                         64 + nruh * 32, 0)), ==,
+                    NVME_SUCCESS);
+    qtest_memread(qts, log, use, 64 + nruh * 32);
+    for (i = 0; i < nruh; i++) {
+        host += ldq_le_p(use + 64 + 32 * i);
+        media += ldq_le_p(use + 64 + 32 * i + 8);
+    }
+    g_test_message("PILOTFILL nruh=%u npids=%u writes=%u failed=%u mapped=%"
+                   PRIu64 " lost=%" PRIu64 " orphans=%" PRIu64
+                   " fdp_check=%" PRIu64 " min_free_units=%u waf=%.3f"
+                   " invalid_pid=%" PRIu64,
+                   nruh, npids, pages + over, fails, mapped, lost, orphans,
+                   femu_fdp_check(qts), min_free,
+                   host ? (double)media / host : 0.0, ldq_le_p(use + 24));
+    g_assert_cmpuint(fails, ==, 0);
+    g_assert_cmpuint(lost, ==, 0);
+    g_assert_cmpuint(ldq_le_p(use + 24), ==, 0);
+
+    g_free(ver);
+    guest_free(alloc, log);
+    guest_free(alloc, list);
+    guest_free(alloc, buf);
+    femu_queue_free(&c, &c.io);
+    femu_disable(&c);
+}
+
 /* read the FEMU FDP usage log (C1h) of four handles into @page */
 static void femu_fdp_usage(FemuCtrlState *c, uint64_t log, uint8_t *page)
 {
@@ -43372,6 +43467,11 @@ static void femu_register_nodes(void)
          * not name it.
          */
         .before_cmd_line =
+            /* fdp-pilot fill tests: 2 and 6 handles, 211 units, all II */
+            "-device femu-subsys,id=pilot-s2,nqn=pilot-s2,fdp=on,fdp.nruh=2,"
+            "fdp.nru=211,fdp.isolation_mode=2 "
+            "-device femu-subsys,id=pilot-s6,nqn=pilot-s6,fdp=on,fdp.nruh=6,"
+            "fdp.nru=211,fdp.isolation_mode=2 "
             "-device femu-subsys,id=fdpsub,nqn=fdpsub,fdp=on,fdp.nruh=4 "
             "-device femu-subsys,id=fdpsub-ii,nqn=fdpsub-ii,fdp=on,fdp.nruh=4,"
             "fdp.isolation_mode=1 "
@@ -46092,6 +46192,34 @@ static void femu_register_nodes(void)
             "id=gc-test,devsz_mb=1,femu_mode=1,secsz=512,secs_per_pg=8,"
             "pgs_per_blk=4,blks_per_pl=25,pls_per_lun=1,luns_per_ch=2,nchs=2,"
             "subsys=fdpsub-allii",
+    });
+    /* fdp-pilot device shape (211 units, GC 90/99): fill 100%, overwrite 4x */
+    qos_add_test("pilot-fill-single2", "femu", femu_test_pilot_fill,
+                 &(QOSGraphTestOptions) {
+        .arg = GUINT_TO_POINTER(1),
+        .edge.extra_device_opts =
+            "id=gc-test,devsz_mb=12,femu_mode=1,secsz=512,secs_per_pg=8,"
+            "pgs_per_blk=4,blks_per_pl=211,pls_per_lun=1,luns_per_ch=2,"
+            "nchs=2,gc_thres_pcent=90,gc_thres_pcent_high=99,"
+            "namespace_phls=0,subsys=pilot-s2",
+    });
+    qos_add_test("pilot-fill-lan6", "femu", femu_test_pilot_fill,
+                 &(QOSGraphTestOptions) {
+        .arg = GUINT_TO_POINTER(5),
+        .edge.extra_device_opts =
+            "id=gc-test,devsz_mb=12,femu_mode=1,secsz=512,secs_per_pg=8,"
+            "pgs_per_blk=4,blks_per_pl=211,pls_per_lun=1,luns_per_ch=2,"
+            "nchs=2,gc_thres_pcent=90,gc_thres_pcent_high=99,"
+            "namespace_phls=0:1:2:3:4,subsys=pilot-s6",
+    });
+    qos_add_test("pilot-fill-single6", "femu", femu_test_pilot_fill,
+                 &(QOSGraphTestOptions) {
+        .arg = GUINT_TO_POINTER(1),
+        .edge.extra_device_opts =
+            "id=gc-test,devsz_mb=12,femu_mode=1,secsz=512,secs_per_pg=8,"
+            "pgs_per_blk=4,blks_per_pl=211,pls_per_lun=1,luns_per_ch=2,"
+            "nchs=2,gc_thres_pcent=90,gc_thres_pcent_high=99,"
+            "namespace_phls=0,subsys=pilot-s6",
     });
     qos_add_test("fdp-usage-log", "femu", femu_test_fdp_usage_log,
                  &(QOSGraphTestOptions) {

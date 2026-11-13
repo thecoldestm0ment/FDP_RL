@@ -4,13 +4,12 @@
 #   run마다: FEMU 새로 띄움(PILOT_POLICY) → ssh로 02_femu_run.sh 한 run → 결과 복사 → FEMU 끔
 #   FTL 상태는 FEMU 메모리에만 있음 → 재시작 = 깨끗한 장치
 #
-#   ./03_host_loop.sh "single lan" 0.70       70% 두 run 먼저 (gain < 10%면 93% 생략)
-#   ./03_host_loop.sh "single lan" 0.93       93% 두 run
-#   ./03_host_loop.sh                         전부 (사용률 순: 70% → 93%)
-#   REP=2 ./03_host_loop.sh "single lan" 0.93 경계일 때 93% 한 번 더
-#   HOST_RESULTS=~/fdp_smoke FORCE=1 ./03_host_loop.sh lan 0.20   작은 시험 (본 결과와 분리)
+#   ./03_host_loop.sh "single lan single6" 0.70  70% 세 run 먼저 (gain < 10%면 93% 생략)
+#   ./03_host_loop.sh "single lan" 0.93          93% 두 run
+#   REP=2 ./03_host_loop.sh "single lan" 0.93    경계일 때 93% 한 번 더
+#   HOST_RESULTS=~/fdp_smoke FORCE=1 OVERWRITE_MULT=0.2 ./03_host_loop.sh lan 0.35   작은 시험 (본 결과와 분리)
 #
-#   FEMU_START_CMD 비우면 femu/start_femu.sh (single RUH 2, lan RUH 6)
+#   FEMU_START_CMD 비우면 femu/start_femu.sh (single RUH 2, lan·single6 RUH 6)
 #
 # 준비 (README "호스트 준비")
 #   - 호스트 config.env: FEMU_BIN, FEMU_GUEST_IMAGE, GUEST_SSH, GUEST_DIR

@@ -85,6 +85,7 @@ def plan(util):
     slope = env("SPACE_SLOPE", float)
     fixed = env("SPACE_FIXED_GIB", float) * GiB
     margin = env("SPACE_MARGIN", float, 0.0)
+    meta = env("TORFS_META_GIB", float, 0.0) * GiB   # TorFS 메타 영역: 장치에 늘 유효로 남는 최대량
     kv = env("KEY_SIZE", int) + env("VALUE_SIZE", int)
     base = env("LEVEL_BASE_MB", float) * MiB
     mult = env("LEVEL_MULT", float)
@@ -93,13 +94,13 @@ def plan(util):
     omult = env("OVERWRITE_MULT", float)
     ru = env("RU_MIB", float) * MiB
 
-    # (기울기 x 논리 + 고정량) x (1 + 여유) = 목표 사용률 x 용량
-    logical = (util * cap / (1 + margin) - fixed) / slope
+    # 장치 최대 유효량 = (기울기 x 논리 + 고정량) x (1 + 여유) + TorFS 메타 = 목표 사용률 x 용량
+    logical = ((util * cap - meta) / (1 + margin) - fixed) / slope
     if logical <= 0:
-        sys.exit(f"[pilot] 사용률 {util}: 고정량 {fixed/GiB:.2f} GiB 가 목표 사용량보다 커서 데이터 못 넣음.")
+        sys.exit(f"[pilot] 사용률 {util}: 고정량 {fixed/GiB:.2f} + 메타 {meta/GiB:.2f} GiB 가 목표 사용량보다 커서 데이터 못 넣음.")
     n = int(logical // kv)
     logical = n * kv
-    peak = slope * logical + fixed              # 측정식이 맞을 때의 최대 사용량
+    peak = slope * logical + fixed              # 측정식이 맞을 때 RocksDB 최대 사용량 (메타 제외)
     ow_total = omult * logical
     w_per_thread = int(math.ceil(ow_total / kv / threads))
     target_file = int(env("TARGET_FILE_MB", float, base / 4 / MiB) * MiB)
@@ -113,9 +114,13 @@ def plan(util):
         "util": util,
         "N": n,
         "logical_gib": logical / GiB,
-        "expected_peak_gib": peak * (1 + margin) / GiB,
+        "expected_peak_gib": (peak * (1 + margin) + meta) / GiB,
+        "rocks_peak_gib": peak * (1 + margin) / GiB,
+        "meta_gib": meta / GiB,
+        "torfs_area_gib": (cap - meta) / GiB,       # TorFS 데이터 영역 = 장치 - 메타 영역 (fs_torfs.cc:138)
+        "torfs_fill": peak * (1 + margin) / (cap - meta) if cap > meta else float("inf"),
         "space_amp_equiv": peak / logical,
-        "peak_util_if_measured": peak / cap,
+        "peak_util_if_measured": (peak + meta) / cap,
         "last_level_target_gib": last_target / GiB,
         "last_level_fill": logical / last_target if lvl < nl - 1 else 0.0,
         "overwrite_writes_per_thread": w_per_thread,
@@ -146,7 +151,10 @@ def cmd_calc(a):
         print(f"  공간 식                   : 최대 사용량 = {env('SPACE_SLOPE')} x 논리 + {env('SPACE_FIXED_GIB')} GiB"
               f" (여유 x{1+env('SPACE_MARGIN', float, 0.0):.2f}, 공간 증폭으로 치면 {p['space_amp_equiv']:.3f})")
         print(f"  예상 최대 사용량(여유 포함): {p['expected_peak_gib']:.2f} GiB"
+              f" = RocksDB {p['rocks_peak_gib']:.2f} + TorFS 메타 {p['meta_gib']:.2f}"
               f" (사용자 용량 {env('DEV_CAPACITY_GIB')} GiB)")
+        print(f"  TorFS 데이터 영역 사용     : {p['rocks_peak_gib']:.2f} / {p['torfs_area_gib']:.2f} GiB"
+              f" = {p['torfs_fill']*100:.1f}%")
         print(f"  측정값이 맞으면 최고 사용률: {p['peak_util_if_measured']*100:.1f}%")
         print(f"  overwrite 스레드당 쓰기 수 : {p['overwrite_writes_per_thread']:,}"
               f" (합계 {p['overwrite_total_gib']:.1f} GiB)")
@@ -163,6 +171,8 @@ def cmd_calc(a):
                   f" {p['last_level_target_gib']:.2f} GiB = {p['last_level_fill']*100:.0f}%")
         if p["expected_peak_gib"] > 0.97 * env("DEV_CAPACITY_GIB", float):
             print("  [경고] 예상 최대 사용량이 용량의 97% 초과. 공간 부족으로 멈출 수 있음.")
+        if p["meta_gib"] > 0 and p["torfs_fill"] > 0.95:
+            print("  [경고] TorFS 데이터 영역의 95% 초과. TorFS NoSpace 로 멈출 수 있음.")
         if p["last_level_fill"] > 0.9:
             print(f"  [경고] 마지막 레벨(L{p['last_level']}) 크기가 목표에 가까움. 넘으면 L{p['last_level']+1}로 내려가기 시작해"
                   " 같은 키가 두 레벨에 겹쳐 쌓이고, 공간이 기울기+고정량 식보다 커질 수 있음.")
@@ -1151,7 +1161,62 @@ def ruh_shares(path, ru_blocks):
     return {p: acc[p] / tot for p in sorted(acc)} if tot else None
 
 
-RUN_RE = re.compile(r"^(single|lan)_u([\d.]+)(?:_r(\d+))?$")
+RUN_RE = re.compile(r"^(single6|single|lan)_u([\d.]+)(?:_r(\d+))?$")
+
+GC_LOG_RE = re.compile(r"gc threshold(_high)? \((\d+)%\) (\d+)/(\d+) RU")
+
+
+def run_gc_units(results, run):
+    """run의 FEMU 로그(host_logs/femu_<run>.log)에서 (전체 RU, background 기준 RU, 강제 기준 RU, 출처).
+    로그 없으면 config.env 값으로 계산."""
+    p = os.path.join(results, "host_logs", f"femu_{run}.log")
+    bg = hi = total = None
+    if os.path.exists(p):
+        with open(p, errors="replace") as f:
+            for line in f:
+                m = GC_LOG_RE.search(line)
+                if m:
+                    total = int(m.group(4))
+                    if m.group(1):
+                        hi = int(m.group(3))
+                    else:
+                        bg = int(m.group(3))
+                if bg is not None and hi is not None:
+                    return total, bg, hi, "FEMU 로그"
+    total = env("FEMU_BLKS_PER_PL", int, 0)
+    if not total:
+        return None
+    bg = int((1 - env("FEMU_GC_THRES", float, 75) / 100) * total)
+    hi = max(int((1 - env("FEMU_GC_THRES_HIGH", float, 95) / 100) * total), 1)
+    return total, bg, hi, "config.env"
+
+
+def run_nruh(d):
+    """device.txt 의 nruh. 없으면 None."""
+    p = os.path.join(d, "device.txt")
+    if os.path.exists(p):
+        m = re.search(r"^nruh=(\d+)", open(p).read(), re.M)
+        if m:
+            return int(m.group(1))
+    return None
+
+
+def overwrite_valid(path):
+    """usage.csv overwrite 구간 [(ts, valid_bytes)]."""
+    if not os.path.exists(path):
+        return []
+    return [(float(r["ts"]), int(r["valid_bytes"])) for r in csv.DictReader(open(path))
+            if r["phase"] == "overwrite"]
+
+
+def valid_drops(v, min_bytes=0.4 * GiB):
+    """유효 데이터가 샘플 사이에 min_bytes 넘게 줄어든 지점 [(구간 내 비율, 줄어든 GiB)].
+    TorFS 메타 영역 교체(1 GiB 해제)가 이렇게 보임."""
+    if len(v) < 2:
+        return []
+    t0, t1 = v[0][0], v[-1][0]
+    return [((b[0] - t0) / (t1 - t0) if t1 > t0 else 0.0, (a[1] - b[1]) / GiB)
+            for a, b in zip(v, v[1:]) if a[1] - b[1] >= min_bytes]
 
 
 def run_lba_bytes(d):
@@ -1203,6 +1268,9 @@ def cmd_summary(a):
             # 대기·LOG 저장 중 장치 쓰기: 주 WAF·뒤 1/3 에서 빼고 따로 표시
             "wait": phase_delta(rows, "overwrite_wait"),
             "logsave": phase_delta(rows, "overwrite_logsave"),
+            "gc": run_gc_units(a.results, name),
+            "nruh": run_nruh(d),
+            "ow_valid": overwrite_valid(os.path.join(d, "usage.csv")),
         })
     if not res:
         sys.exit("[pilot] 요약할 run 없음.")
@@ -1236,6 +1304,34 @@ def cmd_summary(a):
     if not any(r["used"] for r in res):
         print("[참고] 실제 사용률 기록 없음 (usage.csv 없음). RUH_METHOD=femu 로 돌리면 남음.")
 
+    # 여유 RU 추정: background GC가 빈 RU를 bg개 근처로 유지 -> 데이터 몫 = 전체 - bg - 열린 RU(nruh)
+    #   뒤 1/3 평균 유효량을 빼면 남는 여유. 음수면 background 기준을 못 지켜 강제 기준 쪽으로 내려간 상태
+    if any(r["gc"] and r["nruh"] and r["ow_valid"] for r in res):
+        print()
+        print("여유 RU 추정 (뒤 1/3 평균, 여유 = 전체 - GC 기준 빈 RU - 열린 RU - 유효 데이터)")
+        for r in res:
+            if not (r["gc"] and r["nruh"] and r["ow_valid"]):
+                continue
+            total, bg, hi, src = r["gc"]
+            ov = r["ow_valid"]
+            tail = [b for _t, b in ov[int(len(ov) * 2 / 3):]] or [ov[-1][1]]
+            vru = sum(tail) / len(tail) / ru_bytes
+            room = total - bg - r["nruh"]
+            spare = room - vru
+            note = "" if spare > 0 else f"  background 기준 못 지킴 -> 강제 기준({hi}) 쪽 여유 {total - hi - r['nruh'] - vru:.1f} RU"
+            print(f"  {r['run']:<20} GC 빈 RU {bg}/{hi} of {total} ({src}), 열린 RU {r['nruh']},"
+                  f" 유효 {vru:.1f} RU -> 여유 {spare:.1f} RU ({spare / room * 100:.1f}%){note}")
+
+    # TorFS 메타 영역 교체: 유효 데이터가 약 1 GiB 뚝 떨어짐 -> 여유가 갑자기 늘어 WAF 변동
+    drops = [(r, valid_drops(r["ow_valid"])) for r in res]
+    if any(dl for _r, dl in drops):
+        print()
+        print("유효 데이터 급감 (0.4 GiB 이상, TorFS 메타 영역 교체로 추정): overwrite 진행 비율")
+        for r, dl in drops:
+            if dl:
+                print(f"  {r['run']:<20} " + ", ".join(f"{f*100:.0f}% -{g:.2f} GiB" + (" (뒤 1/3)" if f >= 2 / 3 else "")
+                                                  for f, g in dl))
+
     # 덮어쓰기 1배로 GC 안정 상태 도달 여부: 가운데 1/3 vs 뒤 1/3 WAF 차이
     tol = env("STABLE_TOL", float, 0.05)
     print()
@@ -1245,8 +1341,10 @@ def cmd_summary(a):
             print(f"  {r['run']:<20} 샘플이 모자라 확인 못 함")
             continue
         diff = abs(r["waf_mid"] - r["waf_tail"]) / r["waf_tail"]
+        in_tail = any(f >= 2 / 3 for f, _g in valid_drops(r["ow_valid"]))
         print(f"  {r['run']:<20} {r['waf_mid']:.3f} -> {r['waf_tail']:.3f}  ({diff*100:.1f}%)"
-              + ("" if diff <= tol else "  아직 변하는 중: 판정에 쓰기 전에 같이 보기"))
+              + ("" if diff <= tol else "  아직 변하는 중: 판정에 쓰기 전에 같이 보기")
+              + ("  (뒤 1/3에 메타 영역 교체 있음)" if in_tail else ""))
 
     # 잘못된 PID 로 온 쓰기 (장치가 handle 0 으로 보냄): 0 아니면 그 run 폐기
     bad = [r for r in res if r["invalid"]]
@@ -1269,9 +1367,17 @@ def cmd_summary(a):
         if ("single", u) in waf and ("lan", u) in waf:
             gains[u] = 1 - waf[("lan", u)] / waf[("single", u)]
             n = min(nrep[("single", u)], nrep[("lan", u)])
-            print(f"사용률 {u:.2f}: Lan Static이 Single PID보다 Media를 {gains[u]*100:.1f}% 적게 씀"
-                  f" (뒤 1/3 기준, 반복 {n}번 평균), Lan Static에 남은 최대 여지"
+            how = "적게" if gains[u] >= 0 else "더"
+            print(f"사용률 {u:.2f}: gain {gains[u]*100:+.1f}% = lan이 single보다 Media를 {abs(gains[u])*100:.1f}% {how} 씀"
+                  f" (뒤 1/3 기준, 반복 {n}번 평균), lan에 남은 최대 여지"
                   f" 1-1/WAF = {(1-1/waf[('lan', u)])*100:.1f}%")
+        # 대조 single6 (RUH 6개, handle 0만): 열린 RU 비용과 배치 효과를 나눔
+        if ("single6", u) in waf and ("single", u) in waf:
+            print(f"  열린 RU 비용 (single6 / single - 1): {(waf[('single6', u)] / waf[('single', u)] - 1)*100:+.1f}%"
+                  "  (RUH 4개를 더 열어 두면 Media가 이만큼 늘어남)")
+        if ("single6", u) in waf and ("lan", u) in waf:
+            print(f"  배치 효과 (1 - lan / single6): {(1 - waf[('lan', u)] / waf[('single6', u)])*100:+.1f}%"
+                  "  (열린 RU 수가 같을 때 lan 배치로 줄어든 Media)")
     # 목표 사용률은 PC 공간 증폭 기반 계산값 -> 장치 실제 최고 사용률도 같이 표시
     peaks = {}
     for r in res:
@@ -1280,15 +1386,20 @@ def cmd_summary(a):
     for u in sorted(peaks):
         print(f"  목표 {u*100:.0f}%의 실제 최고 사용률: "
               + ", ".join(f"{name} {x*100:.1f}%" for name, x in peaks[u]))
-    if len(gains) < 2:
-        print("판정: 사용률 두 개의 single·lan 결과가 다 있어야 판정 가능.")
+    low_target = min(float(x) for x in env("TARGET_UTILS", str, "0.70 0.93").split())
+    if not gains:
+        print("판정: 같은 사용률의 single·lan 결과가 있어야 판정 가능.")
         return
-    lo, hi = min(gains), max(gains)
+    lo = min(gains)
+    if len(gains) < 2 and not (lo == low_target and gains[lo] < min_gain):
+        print(f"판정: 사용률 두 개의 single·lan 결과가 다 있어야 판정 가능 (지금은 {lo:.2f}만 있음).")
+        return
+    hi = max(gains)
     print()
     if gains[lo] < min_gain:
         print(f"판정 보류: {lo*100:.0f}%에서 이득이 {gains[lo]*100:.1f}%로 최소 기준 {min_gain*100:.0f}%보다 작음.")
-        print("  -> 비율 의미 없음. FEMU에서 FDP 이득 자체가 작은 이유(PID가 실제로 나뉘어 도착하는지,")
-        print("     OP·RU 크기, 카운터)부터 확인.")
+        print("  -> 비율 의미 없음. 높은 사용률 run 생략. FEMU에서 FDP 이득 자체가 작은 이유(PID가 실제로 나뉘어 도착하는지,")
+        print("     여유 RU·GC 기준, OP·RU 크기, 카운터)부터 확인.")
     else:
         ratio = gains[hi] / gains[lo]
         print(f"이득 비율 = {hi*100:.0f}% 이득 / {lo*100:.0f}% 이득 = {ratio:.2f}"
@@ -1321,7 +1432,7 @@ def main():
     sp.add_parser("lbasize")
     sp.add_parser("ruhtypes")
     p = sp.add_parser("devcheck")
-    p.add_argument("policy", choices=["single", "lan"])
+    p.add_argument("policy", choices=["single", "lan", "single6"])
     p.add_argument("out")
     sp.add_parser("pidcheck")
     p = sp.add_parser("pcsummary")
