@@ -1,0 +1,121 @@
+policy=lan util=0.70 N=13675847 W_per_thread=3418962 threads=4 lba_bytes=512
+TORFS_FORCE_PID=unset fs_uri=torfs:xnvme:/dev/ng0n1?be=io_uring_cmd
+device:
+  policy=lan
+  nruh=6  (기대 6)
+  ruh_types=0:II 1:II 2:II 3:II 4:II 5:II
+  placement(pid->ruh)=0->0 1->1 2->2 3->3 4->4
+  invalid_pid_cmds_at_start=0
+  check=OK
+config:
+WORK="${WORK:-$HOME/fdp_pilot_work}"          # 소스·빌드·결과
+RESULTS="${RESULTS:-$WORK/results}"
+ROCKSDB_TAG="v7.2.2"
+TORFS_COMMIT="0a6e399aa3df0b5cd5bbe9d9ccee09d853f3a95a"
+LAN_REPO_COMMIT="HEAD"                         # sijielan/FDP_Benchmarking
+KEY_SIZE=16                 # B
+VALUE_SIZE=1024             # B (Lan YCSB 40 KB, README)
+LEVEL_BASE_MB=2.5           # max_bytes_for_level_base = 2,621,440 B
+TARGET_FILE_MB=0.5          # target_file_size_base = 524,288 B
+TARGET_FILE_MULT=1
+WRITE_BUFFER_MB=1           # write_buffer_size = 1,048,576 B
+LEVEL_MULT=10
+NUM_LEVELS=7
+L0_TRIGGER=4
+L0_SLOWDOWN=20
+L0_STOP=36
+MIN_WB_MERGE=2
+MAX_WB_NUMBER=24
+SOFT_PENDING_BYTES=536870912     # 0.5 GiB (Lan 64 GiB / 128)
+HARD_PENDING_BYTES=2147483648    # 2 GiB   (Lan 256 GiB / 128)
+DELAYED_WRITE_RATE=16777216      # 16 MiB/s (Lan 값, db_bench 기본 8 MiB/s)
+BG_JOBS=4
+COMPRESSION="none"          # 쓰기량이 압축률에 안 흔들리게 (Lan db_bench도 끔)
+DEV_CAPACITY_GIB=24         # 사용자 용량 (= FEMU_DEVSZ_MB)
+RU_MIB=128
+NG_DEV="/dev/ng0n1"         # ★ 게스트의 문자 장치 (TorFS)
+NVME_DEV="/dev/nvme0n1"     # ★ 같은 장치의 블록 장치 (카운터 읽기)
+EXPECT_RUHT="II"            # II | PI | any. 파일럿은 모든 RUH II (PI 비교는 갈래 A)
+NRUH_single=2               # 0 데이터 (TORFS_FORCE_PID=0), 1 GC
+PHS_single="0"
+NRUH_lan=6                  # 0 WAL / 1 L0–L3 / 2 L4 / 3 L5+ / 4 MANIFEST, 5 GC
+PHS_lan="0:1:2:3:4"
+TARGET_UTILS="0.70 0.93"    # 최대 사용량(삭제 대기 파일 포함) / 사용자 용량
+SPACE_SLOPE=1.0134
+SPACE_FIXED_GIB=3.047
+SPACE_MARGIN=0.02           # 식 x 1.02 → 실제 최고 = 목표 / 1.02 (93% → 약 91.2%, 70% → 약 68.6%)
+OVERWRITE_MULT=${OVERWRITE_MULT:-1}
+STABLE_TOL=0.05             # 가운데·뒤 1/3 WAF 차가 이보다 크면 "변하는 중"
+THREADS=4                   # overwrite 스레드 (load는 1개)
+SEED=1
+TRACK_STATS=${TRACK_STATS:-1}                  # 1: --stats_per_interval=1, --stats_dump_period_sec (출력만 늘어남)
+STATS_INTERVAL_SEC=${STATS_INTERVAL_SEC:-60}
+SAVE_FULL_LOG=${SAVE_FULL_LOG:-1}              # LOG 전체 gzip 보관. 큼 (70% load 2시간에 1.37 GB), db_bench 7.2.2에 크기 제한 플래그 없음
+OPTCHECK_STRICT=${OPTCHECK_STRICT:-1}          # 옵션 대조 실패 시 1 = 중단, 0 = 기록만
+MIN_GAIN_LOW=0.10           # 70% gain이 이보다 작으면 보류
+COLLAPSE_RATIO=0.5          # gain(93%) / gain(70%) < 이 값 → 무너짐
+BORDER_BAND=0.1             # 0.4~0.6 → 경계, 93%만 REP=2
+SAMPLE_SEC=30               # 장치 카운터 읽기 간격(초)
+COUNTER_METHOD="fdpstats"
+FDP_ENDGRP=1
+COUNTER_CMD=""              # custom 일 때만
+RUH_METHOD="femu"
+RUH_CMD=""
+FEMU_USAGE_LID=0xc1         # hw/femu/nvme.h NVME_LOG_FEMU_FDP_USAGE
+LBA_BYTES=512               # run마다 'nvme id-ns'로 읽고(lba_bytes), 못 읽을 때만 이 값
+FEMU_SECSZ=512
+FEMU_SECS_PER_PG=8
+FEMU_PGS_PER_BLK=512
+FEMU_BLKS_PER_PL=211        # = RU 개수 (fdp.nru 도 같은 값)
+FEMU_PLS_PER_LUN=1
+FEMU_LUNS_PER_CH=8
+FEMU_NCHS=8
+FEMU_DEVSZ_MB=24576         # 24 GiB
+FEMU_GC_THRES=75
+FEMU_GC_THRES_HIGH=95
+FEMU_ISOLATION_MODE=2       # 모든 RUH II (이 브랜치 추가. 원본 1 = 마지막 RUH만 II)
+FEMU_NAND_LAT="pg_rd_lat=40000,pg_wr_lat=200000,blk_er_lat=2000000,ch_xfer_lat=0"   # 원본 run-blackbox-fdp.sh 값
+FEMU_BIN="${FEMU_BIN:-}"                   # ★ 이 브랜치 build-femu/qemu-system-x86_64
+FEMU_GUEST_IMAGE="${FEMU_GUEST_IMAGE:-}"   # ★ 게스트 qcow2 (RocksDB·TorFS·nvme-cli 설치)
+FEMU_GUEST_MEM="${FEMU_GUEST_MEM:-8G}"
+FEMU_GUEST_CPUS="${FEMU_GUEST_CPUS:-4}"
+FEMU_SSH_PORT="${FEMU_SSH_PORT:-8080}"
+FEMU_MBE_FILE="${FEMU_MBE_FILE-$HOME/fdp_pilot_femu/ssd_backend.bin}"
+FEMU_QMP_SOCK="${FEMU_QMP_SOCK:-$HOME/fdp_pilot_femu/qmp.sock}"
+FEMU_SUDO="${FEMU_SUDO:-1}" # 1 = sudo -n 으로 띄움
+FEMU_START_CMD=""           # 비우면 femu/start_femu.sh. 직접 쓰면 PILOT_POLICY 를 읽어 foreground로 띄울 것
+GUEST_SSH=""                # ★ 예: "femu@localhost"
+GUEST_SSH_OPTS="-p ${FEMU_SSH_PORT}"
+GUEST_DIR=""                # ★ 게스트 fdp_pilot 경로. 예: "/home/femu/FDP_RL/exp/fdp_pilot"
+GUEST_PREP_CMD=""           # (선택) 부팅 뒤 run 전 게스트 명령
+BOOT_TIMEOUT_SEC=600
+SHUTDOWN_TIMEOUT_SEC=180    # 넘으면 강제 종료
+POLL_SEC=60
+HOST_RESULTS="${HOST_RESULTS:-$HOME/fdp_pilot_results}"
+FEMU_RESET_CMD=""
+db_args:
+  --key_size=16
+  --value_size=1024
+  --num_levels=7
+  --max_bytes_for_level_base=2621440
+  --max_bytes_for_level_multiplier=10
+  --target_file_size_base=524288
+  --target_file_size_multiplier=1
+  --write_buffer_size=1048576
+  --max_write_buffer_number=24
+  --min_write_buffer_number_to_merge=2
+  --level0_file_num_compaction_trigger=4
+  --level0_slowdown_writes_trigger=20
+  --level0_stop_writes_trigger=36
+  --soft_pending_compaction_bytes_limit=536870912
+  --hard_pending_compaction_bytes_limit=2147483648
+  --delayed_write_rate=16777216
+  --level_compaction_dynamic_level_bytes=false
+  --compression_type=none
+  --max_background_jobs=4
+  --seed=1
+  --statistics
+  --stats_interval_seconds=60
+  --histogram=false
+  --stats_per_interval=1
+  --stats_dump_period_sec=60

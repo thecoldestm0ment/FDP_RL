@@ -1,0 +1,6 @@
+policy=lan
+nruh=6  (기대 6)
+ruh_types=0:II 1:II 2:II 3:II 4:II 5:II
+placement(pid->ruh)=0->0 1->1 2->2 3->3 4->4
+invalid_pid_cmds_at_start=0
+check=OK
