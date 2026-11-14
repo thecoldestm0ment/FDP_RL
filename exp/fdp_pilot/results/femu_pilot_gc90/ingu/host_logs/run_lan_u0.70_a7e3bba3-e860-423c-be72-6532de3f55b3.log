@@ -1,0 +1,10 @@
+[femu] 새로 띄운 FEMU라 초기화 생략.
+policy=lan
+nruh=6  (기대 6)
+ruh_types=0:II 1:II 2:II 3:II 4:II 5:II
+placement(pid->ruh)=0->0 1->1 2->2 3->3 4->4
+invalid_pid_cmds_at_start=0
+check=OK
+[옵션] load: 결과: 통과 28 / 불일치 0 / 누락 0
+[옵션] overwrite: 결과: 통과 28 / 불일치 0 / 누락 0
+[femu] 완료: /home/femu/fdp_pilot_work/results/lan_u0.70

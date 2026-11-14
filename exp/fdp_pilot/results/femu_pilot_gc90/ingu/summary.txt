@@ -1,0 +1,19 @@
+판정 구간: overwrite 실행 시간의 마지막 1/3; timestamp 선형 보간
+WAF = media bytes / host bytes. 총 Media 변화율과 WAF 변화율은 다름.
+lan_u0.70: VALID; host 545.445 GiB; total Media 1136.207 GiB; WAF 2.0831; WAF(시간 뒤1/3) 2.5272; 가운데1/3 2.1700; 실제 최고 사용률 69.13%
+  [주의] 가운데→뒤 1/3 WAF 차 14.1% > 5%. 아직 변하는 중. 판정에는 쓰고 해석 때 같이 봄
+  GC trigger 빈RU 21/2 of 211 (FEMU 로그); 실제 free RU 측정값 아님.
+  [추정] 여유 RU (뒤 1/3): 전체 211 - GC 기준 21 - 열린 RU 6 - 유효 129.8 = 54.2 RU (29.5%)
+  RUH별 host 비율: 0:4.6% 1:59.2% 2:26.5% 3:9.7% 4:0.0% 5:0.0%
+  RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.
+  유효량 급감 (overwrite 시간 비율): 45.0% -0.57 GiB, 95.4% -0.96 GiB
+single_u0.70: VALID; host 545.787 GiB; total Media 1345.920 GiB; WAF 2.4660; WAF(시간 뒤1/3) 2.7727; 가운데1/3 2.5219; 실제 최고 사용률 69.12%
+  [주의] 가운데→뒤 1/3 WAF 차 9.0% > 5%. 아직 변하는 중. 판정에는 쓰고 해석 때 같이 봄
+  GC trigger 빈RU 21/2 of 211 (FEMU 로그); 실제 free RU 측정값 아님.
+  [추정] 여유 RU (뒤 1/3): 전체 211 - GC 기준 21 - 열린 RU 2 - 유효 129.1 = 58.9 RU (31.3%)
+  RUH별 host 비율: 0:100.0% 1:0.0%
+  RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.
+  유효량 급감 (overwrite 시간 비율): 53.4% -0.57 GiB, 96.6% -0.95 GiB
+[주의] 아직 변하는 run 포함: lan_u0.70, single_u0.70 → 판정 해석 때 같이 볼 것
+사용률 0.70: WAF 감소율 +8.85% = 1 − WAF_lan/WAF_single (시간 뒤1/3)
+판정 보류: 70% WAF 이득이 10% 미만. 93% 본 비교를 진행하지 않음.
