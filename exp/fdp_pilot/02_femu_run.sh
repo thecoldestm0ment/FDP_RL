@@ -4,7 +4,7 @@
 #   정책(single, lan, 대조 single6·single4, 변형 lan3) x 사용률(TARGET_UTILS) 를 한 번씩 돌리고
 #   장치 카운터(host/media 쓰기량)와 RUH별 상태를 SAMPLE_SEC 마다 기록.
 #
-#   sudo -E ./02_femu_run.sh                 전부 (single·lan x 모든 사용률)
+#   sudo -E ./02_femu_run.sh                 기본 single·lan x 모든 사용률 (다른 정책은 이름으로: single6 single4 lan3)
 #   sudo -E ./02_femu_run.sh lan 0.93        하나만
 #   REP=2 sudo -E ./02_femu_run.sh ...       두 번째 반복 (폴더 이름 끝에 _r2)
 #
@@ -46,6 +46,13 @@ case "${PILOT_DB_BENCH:-}" in
 esac
 DB_BENCH="$DB_BENCH_DEFAULT"
 UTILS="${2:-$TARGET_UTILS}"
+if [[ "${PILOT_DB_BENCH:-}" == map ]]; then   # 작은 시험 전용: 본 run 조건이면 거부
+  for U in $UTILS; do
+    if [[ " $TARGET_UTILS " == *" $U "* ]] && python3 -c 'import sys; sys.exit(float(sys.argv[1]) < 1)' "$OVERWRITE_MULT"; then
+      echo "PILOT_DB_BENCH=map 은 작은 시험 전용. 본 run 조건(사용률 $U ∈ TARGET_UTILS, OVERWRITE_MULT=$OVERWRITE_MULT ≥ 1)이라 거부"; exit 1
+    fi
+  done
+fi
 REP="${REP:-1}"
 SUFFIX=""; [[ "$REP" != "1" ]] && SUFFIX="_r$REP"
 SAMPLER=""; DB_PID=""; RUN=""
@@ -158,6 +165,7 @@ for POL in $POLICIES; do
       "script=02_femu_run.sh" "policy=$POL" "util=$U" "REP=$REP" "SCALE=1 (FEMU는 크기 줄이기 없음)" \
       "TORFS_FORCE_PID=${TORFS_FORCE_PID:-unset}  (single*=0, lan·lan3=unset -> Lan 패치의 레벨별 hint)" \
       "TORFS_PID_MAP=${TORFS_PID_MAP:-unset}  (lan3: 기본 PID 0 WAL,1 L0–L3,2 L4,3 L5+,4 MANIFEST -> i번째 값)" \
+      "PILOT_DB_BENCH=${PILOT_DB_BENCH:-unset}  (map = 작은 시험 전용, 패치 중립 확인)" \
       "N(--num)=$N" "W(--writes, 스레드당)=$W" \
       "overwrite 전체 연산 수 = W x THREADS = $((W * THREADS))" \
       "논리 데이터 대비 배수 = W x THREADS / N = $(python3 -c "print(f'{$W*$THREADS/$N:.4f}')")" \

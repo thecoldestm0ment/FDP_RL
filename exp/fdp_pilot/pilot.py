@@ -1318,6 +1318,21 @@ def key_diff(k1, k2):
     return out
 
 
+def format_diff(d):
+    """key_diff 결과를 사람이 읽게: build는 다른 필드까지."""
+    return ", ".join(f"build({', '.join(v)})" if k == "build" and v else k for k, v in sorted(d.items()))
+
+
+def pid_mapped(r):
+    """PID 매핑 정책 run인지 (run config에 TORFS_PID_MAP_<정책> 값이 있음, 지금은 lan3)."""
+    return bool(r["config"].get(f"TORFS_PID_MAP_{r['policy']}"))
+
+
+def policy_table(r):
+    """run이 쓴 자기 정책 표 (NRUH·PHS·TORFS_PID_MAP). 옛 manifest에 없는 항목은 None."""
+    return tuple((k, r["config"].get(f"{k}_{r['policy']}")) for k in ("NRUH", "PHS", "TORFS_PID_MAP"))
+
+
 def variant_lines(waf, u, only=None):
     """single4·lan3 분해 (03 lan3 계획의 식). waf = {(정책, 사용률): 뒤 1/3 WAF}. only면 그 정책이 들어간 줄만."""
     rows = [("single4", "single", "열린RU +2 칸 비용 (WAF_single4/WAF_single − 1)", False),
@@ -1413,25 +1428,40 @@ def cmd_summary(a):
     if not res:
         print("판정 보류: 완료·계측·안정성 검증을 통과한 비교 결과 없음.")
         return
-    # 기준 묶음: single·lan이 있는 비교 키 중 run이 가장 많은 것. 빌드만 다른 run(예: lan3 = PID 매핑 패치)은
-    #   판정·주 비교에서 빼고 아래 "참고"로만 비교. 컴퓨터·QEMU·커널·실험 설정이 다르면 지금처럼 판정 보류
-    by_key = {}
-    for r in res:
-        by_key.setdefault(r["key"], []).append(r)
+    # 비교 키가 다른 run이 섞이면 판정 보류. 예외 하나: PID 매핑 정책(run config에 TORFS_PID_MAP_<정책>, 예 lan3)이
+    #   빌드만 다르면 판정·주 비교에서 빼고 아래 "참고"로만 비교. 나머지 정책(single·lan·single6·single4)은
+    #   빌드가 달라도 예전처럼 판정 보류
     others = []
-    if len(by_key) > 1:
-        main = max(by_key.values(), key=lambda g: (any(r["policy"] == "single" for r in g)
-                                                   and any(r["policy"] == "lan" for r in g), len(g)))
-        others = [r for r in res if r["key"] != main[0]["key"]]
-        diffs = {r["run"]: key_diff(main[0]["key"], r["key"]) for r in others}
-        if any(set(d) - {"build"} for d in diffs.values()):
+    if len({r["key"] for r in res}) > 1:
+        plain_keys = {r["key"] for r in res if not pid_mapped(r)}
+        by_key = {}
+        for r in res:
+            by_key.setdefault(r["key"], []).append(r)
+        main_key = max(plain_keys or by_key, key=lambda k: (
+            any(r["policy"] == "single" for r in by_key[k]) and any(r["policy"] == "lan" for r in by_key[k]),
+            len(by_key[k])))
+        off = [r for r in res if r["key"] != main_key]
+        diffs = {r["run"]: key_diff(main_key, r["key"]) for r in off}
+        if any(not pid_mapped(r) or set(diffs[r["run"]]) - {"build"} for r in off):
             print("판정 보류: 컴퓨터·QEMU·빌드·커널·실험 설정이 다른 run이 섞임. 한 컴퓨터·같은 설정 결과만 비교할 것.")
-            for run, d in diffs.items():
-                print(f"  {run}: 기준 run과 다른 항목 {', '.join(sorted(d))}")
+            for r in off:
+                print(f"  {r['run']}: 기준 run과 다른 항목 {format_diff(diffs[r['run']])}")
             return
         print("[빌드 다름: 판정·주 비교에서 뺌, 아래 참고 비교에만] " + "; ".join(
-            f"{run} ({', '.join(d['build'])})" for run, d in diffs.items()))
-        res = main
+            f"{r['run']} ({format_diff(diffs[r['run']])})" for r in off))
+        others = off
+        res = by_key[main_key]
+    # 같은 정책인데 자기 장치 표가 다르면 판정 보류 (비교 키에서 정책 표를 빼서 여기서 따로 확인)
+    tables = {}
+    for r in res + others:
+        tables.setdefault(r["policy"], {}).setdefault(policy_table(r), []).append(r["run"])
+    mixed = {p: t for p, t in tables.items() if len(t) > 1}
+    if mixed:
+        print("판정 보류: 같은 정책인데 장치 표(NRUH·PHS·TORFS_PID_MAP)가 다른 run이 섞임.")
+        for p, t in mixed.items():
+            for table, runs in t.items():
+                print(f"  {p} {dict(table)}: {', '.join(runs)}")
+        return
     if len({r["src"] for r in res}) > 1:
         print("[주의] run마다 실행 스크립트 버전이 다름 (실험 설정·빌드는 같음). 버그 수정 등 변경 내용을 같이 기록할 것")
     unstable = [r["run"] for r in res if r.get("unstable")]
@@ -1454,20 +1484,18 @@ def cmd_summary(a):
             print(f"  열린RU 수 동일 조건의 배치 WAF 감소율: {(1-waf[('lan', u)]/waf[('single6', u)])*100:+.2f}%")
         for line in variant_lines(waf, u):
             print("  " + line)
-    if others:
-        allw = dict(waf)
-        for r in others:
-            allw.setdefault((r["policy"], r["util"]), r["waf_tail"])
-        for r in others:
-            lines = variant_lines(allw, r["util"], only=r["policy"])
-            if lines:
-                print(f"[참고, 빌드 다름] {r['run']} (WAF 뒤1/3 {r['waf_tail']:.4f}):")
-                for line in lines:
-                    print("  " + line)
+    for r in others:
+        # 참고 run마다 자기 WAF로 계산 (기준 묶음에 같은 정책·사용률이 있어도 덮어씀)
+        lines = variant_lines(waf | {(r["policy"], r["util"]): r["waf_tail"]}, r["util"], only=r["policy"])
+        if lines:
+            print(f"[참고, 빌드 다름] {r['run']} (WAF 뒤1/3 {r['waf_tail']:.4f}):")
+            for line in lines:
+                print("  " + line)
     if .70 not in gains:
         print("판정 보류: 같은 컴퓨터의 유효한 70% single·lan 짝 필요.")
         return
-    decision_cfg = res[0]["config"]
+    # 판정 기준값은 판정에 쓰는 single·lan run의 config에서 (이름순 첫 run이 아니라)
+    decision_cfg = next((r["config"] for r in res if r["policy"] in ("single", "lan")), res[0]["config"])
     min_gain = float(decision_cfg.get("MIN_GAIN_LOW", .10))
     if gains[.70] < min_gain:
         print(f"판정 보류: 70% WAF 이득이 {min_gain*100:g}% 미만. 93% 본 비교를 진행하지 않음.")

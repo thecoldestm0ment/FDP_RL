@@ -33,6 +33,8 @@ NAMES = {"lan": {0: "WAL", 1: "L0–L3", 2: "L4", 3: "L5+", 4: "MANIFEST"},
          "lan3": {0: "WAL·MANIFEST·L0–L3", 1: "L4", 2: "L5+"}}
 # 2)에서 볼 칸 (lan은 WAL·MANIFEST 빼고 SST 칸만)
 LEVEL_RUHS = {"lan": (1, 2, 3), "lan3": (0, 1, 2)}
+# lan3 0번 칸 = lan 0·1·4번 칸 (WAL·L0–L3·MANIFEST). lan과 lan3를 비교할 때 lan 쪽에 합친 값도 냄
+LAN3_RUH0_IN_LAN = (0, 1, 4)
 
 
 def names(policy):
@@ -89,6 +91,7 @@ def tenths(d):
             "re": src[gc] / hb,
             "gcshare": s1[gc][2] / live if live else 0.0,
             "own": {r: src[r] / dh[r] for r in s1 if r != gc and dh[r] > 0},
+            "src": src, "dh": dh,
         })
     return rows, pts, gc
 
@@ -100,8 +103,14 @@ def main():
     u = sys.argv[2] if len(sys.argv) > 2 else "0.70"
     pa = sys.argv[3] if len(sys.argv) > 3 else "single"
     pb = sys.argv[4] if len(sys.argv) > 4 else "lan"
+    for pol in (pa, pb):
+        d = os.path.join(base, f"{pol}_u{u}")
+        if not os.path.isdir(d):
+            have = sorted(x for x in os.listdir(base) if "_u" in x) if os.path.isdir(base) else []
+            sys.exit(f"{d} 없음. 있는 run: {', '.join(have) or '-'}")
     S, s_pts, s_gc = tenths(os.path.join(base, f"{pa}_u{u}"))
     L, l_pts, l_gc = tenths(os.path.join(base, f"{pb}_u{u}"))
+    with_lan3 = "lan3" in (pa, pb)
 
     print(f"== 1) overwrite 10등분 (덮어쓴 host 바이트 기준), 사용률 {u}, A={pa} B={pb}")
     print(f"구간      | WAF A/B     | {pb} 덜 씀 | GC칸 비중 A/B | 처음 옮김 A/B | 다시 옮김 A/B | 차이 처음 + 다시 = 합")
@@ -117,13 +126,23 @@ def main():
         print(f"\n== 2) {pol} 데이터 칸: GC가 그 칸에서 옮긴 양 / 그 칸에 새로 쓴 양 (구간 흐름)")
         for i in (0, 2, 4, 6, 8, 9):
             own = rows[i]["own"]
+            extra = ""
+            if pol == "lan" and with_lan3:
+                sh = sum(rows[i]["dh"].get(r, 0) for r in LAN3_RUH0_IN_LAN)
+                extra = (f"  | WAL+L0–L3+MAN (lan3 0번과 비교) "
+                         f"{sum(rows[i]['src'].get(r, 0) for r in LAN3_RUH0_IN_LAN) / sh:.2f}" if sh > 0 else "")
             print(f"{i*10:>3}-{(i+1)*10:>3}%: " + "  ".join(
-                f"{names(pol).get(r, r)} {v:.2f}" for r, v in sorted(own.items()) if r in LEVEL_RUHS[pol]))
+                f"{names(pol).get(r, r)} {v:.2f}" for r, v in sorted(own.items()) if r in LEVEL_RUHS[pol]) + extra)
 
     print("\n== 3) run 전체 누적 칸별 (media − host) / host  (GC 아닌 증가분 포함)")
     for name, pts, gc in ((pa, s_pts, s_gc), (pb, l_pts, l_gc)):
         last = pts[-1][1]
         parts = [f"{names(name).get(r, r)} {(m - h) / h:.2f}" for r, (h, m, _l) in sorted(last.items()) if r != gc and h]
+        if name == "lan" and with_lan3:
+            h = sum(last[r][0] for r in LAN3_RUH0_IN_LAN if r in last)
+            m = sum(last[r][1] for r in LAN3_RUH0_IN_LAN if r in last)
+            if h:
+                parts.append(f"| WAL+L0–L3+MAN {(m - h) / h:.2f}")
         print(f"  {name:<7}: " + "  ".join(parts) + f"   | GC칸({gc}) live {last[gc][2]/GiB:.2f} GiB")
 
     print("\n== 4) GC 전 WAF (media ≤ 20 GiB 인 마지막 샘플, 장치가 차기 전)")

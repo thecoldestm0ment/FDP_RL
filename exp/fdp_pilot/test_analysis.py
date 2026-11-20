@@ -6,6 +6,7 @@ import gzip
 import io
 import json
 import os
+import re
 from pathlib import Path
 import tempfile
 import types
@@ -16,10 +17,12 @@ import pilot
 import runcheck
 
 
-def fixture(root, policy='single', waf=2, host='same-host', util=.70, build='same'):
-    d = root / f'{policy}_u{util:.2f}'
+def fixture(root, policy='single', waf=2, host='same-host', util=.70, build='same', suffix='', cfg_extra=None):
+    d = root / f'{policy}_u{util:.2f}{suffix}'
     d.mkdir()
-    cfg = {'SAMPLE_SEC':'30', 'MAX_SAMPLE_GAP_FACTOR':'3', 'UTIL_TOL':'.03', 'STABLE_TOL':'.05'}
+    # 실제 manifest처럼 모든 run config에 lan3 매핑 값이 들어 있음 (자기 정책 것만 의미 있음)
+    cfg = {'SAMPLE_SEC':'30', 'MAX_SAMPLE_GAP_FACTOR':'3', 'UTIL_TOL':'.03', 'STABLE_TOL':'.05',
+           'TORFS_PID_MAP_lan3':'0,0,1,2,0'} | (cfg_extra or {})
     m = {'schema':1, 'N':10, 'expected_writes':20, 'policy':policy, 'util':util,
          'config':cfg, 'source':{'commit':'fixed'}, 'build':{'binary_sha256':build},
          'kernel':'same', 'nvme':'same', 'host':{'hostname':host, 'qemu_sha256':'same'}}
@@ -144,12 +147,66 @@ class AnalysisRegression(unittest.TestCase):
             text=summarize(root)
             self.assertIn('사용률 0.70: WAF 감소율',text)
             self.assertIn('[빌드 다름: 판정·주 비교에서 뺌',text)
-            self.assertIn('lan3_u0.70 (binary_sha256)',text)
+            self.assertIn('lan3_u0.70 (build(binary_sha256))',text)   # 빌드만 다른 예외는 PID 매핑 정책(lan3)뿐
             self.assertIn('열린RU +2 칸 비용 (WAF_single4/WAF_single − 1): +10.0',text)
             self.assertIn('[참고, 빌드 다름] lan3_u0.70',text)
             self.assertIn('lan3 개선율 (1 − WAF_lan3/WAF_lan): +20.0',text)
             self.assertIn('열린RU 수 동일(4) 배치 효과 (1 − WAF_lan3/WAF_single4): +9.0',text)
             self.assertNotIn('다른 run이 섞임',text)
+
+    def test_plain_policy_build_change_refused(self):
+        """(a) single·lan 70% 빌드 A + 93% 빌드 B → 예전처럼 판정 보류 (93% 짝이 빠져 관문 통과로 가면 안 됨)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            fixture(root,'single',2.0); fixture(root,'lan',1.6)
+            fixture(root,'single',2.0,util=.93,build='B'); fixture(root,'lan',2.1,util=.93,build='B')
+            text=summarize(root)
+            self.assertIn('판정 보류: 컴퓨터·QEMU·빌드',text)
+            self.assertIn('build(binary_sha256)',text)
+            self.assertNotIn('관문 통과',text); self.assertNotIn('사용률 0.70: WAF 감소율',text)
+
+    def test_rep_with_other_build_refused(self):
+        """(b) 빌드가 다른 single_u0.93_r2가 섞이면 판정 보류."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            for u in (.70,.93): fixture(root,'single',2.0,util=u); fixture(root,'lan',1.6,util=u)
+            fixture(root,'single',2.0,util=.93,build='B',suffix='_r2')
+            text=summarize(root)
+            self.assertIn('판정 보류: 컴퓨터·QEMU·빌드',text)
+            self.assertIn('single_u0.93_r2',text)
+            self.assertNotIn('이득 비율',text)
+
+    def test_reference_lines_use_own_waf(self):
+        """참고 run마다 자기 WAF로 계산 (기준 묶음의 같은 정책 값이 아니라)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            fixture(root,'single',2.0); fixture(root,'lan',2.5); fixture(root,'lan3',2.4)
+            fixture(root,'lan3',2.0,build='map',suffix='_r2'); fixture(root,'lan3',2.25,build='map',suffix='_r3')
+            text=summarize(root)
+            lan=float(re.search(r'^lan_u0\.70: .*WAF\(시간 뒤1/3\) ([\d.]+)',text,re.M).group(1))
+            for run in ('lan3_u0.70_r2','lan3_u0.70_r3'):
+                block=text[text.index(f'[참고, 빌드 다름] {run}'):]
+                head=float(re.search(r'WAF 뒤1/3 ([\d.]+)',block).group(1))
+                pct=float(re.search(r'lan3 개선율 \(1 − WAF_lan3/WAF_lan\): ([+-][\d.]+)%',block).group(1))
+                self.assertAlmostEqual(pct,(1-head/lan)*100,places=1)
+            self.assertIn('lan3 개선율 (1 − WAF_lan3/WAF_lan): +4.0',text)   # 기준 묶음 lan3 (2.4)
+
+    def test_same_policy_with_different_table_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            fixture(root,'single',2.0,cfg_extra={'NRUH_single':'2'}); fixture(root,'lan',1.6)
+            fixture(root,'single',2.0,suffix='_r2',cfg_extra={'NRUH_single':'3'})
+            text=summarize(root)
+            self.assertIn('장치 표(NRUH·PHS·TORFS_PID_MAP)가 다른 run이 섞임',text)
+            self.assertNotIn('사용률 0.70: WAF 감소율',text)
+
+    def test_decision_thresholds_from_single_lan(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            fixture(root,'single',2.0); fixture(root,'lan',1.6)
+            fixture(root,'lan3',1.7,cfg_extra={'MIN_GAIN_LOW':'.5'})   # 이름순 첫 run
+            text=summarize(root)
+            self.assertIn('70% 관문 통과',text)
 
     def test_build_and_host_difference_still_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -204,6 +261,9 @@ class AnalysisRegression(unittest.TestCase):
         self.assertEqual(rc,1); self.assertIn('TORFS_PID_MAP_lan3',text)
         rc,text=self.devcheck('lan3','0,0,1,2,0',[(0,0),(1,1),(2,3)])
         self.assertEqual(rc,1); self.assertIn('GC 전용 RUH 3',text)
+        for bad,msg in (('0,0,1','숫자 5개'),('0,a,1,2,0','숫자 5개'),('0,0,1,1,0','안 쓰는 handle')):
+            rc,text=self.devcheck('lan3',bad,[(0,0),(1,1),(2,2)])
+            self.assertEqual(rc,1,bad); self.assertIn(msg,text)
 
     def test_no_current_config_fallback_for_old_gc(self):
         with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ,{'FEMU_BLKS_PER_PL':'211','FEMU_GC_THRES':'90'}):

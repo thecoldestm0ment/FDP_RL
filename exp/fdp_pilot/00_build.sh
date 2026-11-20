@@ -58,7 +58,7 @@ fi
 
 PLUGINS=""
 if [[ "$MODE" != "pc" ]]; then
-  # 3) TorFS: Lan이 쓴 커밋 + Single PID 패치(TORFS_FORCE_PID 환경변수)
+  # 3) TorFS: Lan이 쓴 커밋 + Single PID 패치(TORFS_FORCE_PID). femu-map 은 + PID 매핑(TORFS_PID_MAP) 패치
   if [[ ! -d "$TREE/plugin/torfs" ]]; then
     git clone https://github.com/SamsungDS/TorFS.git "$TREE/plugin/torfs"
     ( cd "$TREE/plugin/torfs" && git checkout -q "$TORFS_COMMIT" \

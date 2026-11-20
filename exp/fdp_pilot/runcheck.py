@@ -130,6 +130,7 @@ def guest(path, binary, policy, util, n, w):
             'expected_writes': int(w) * int(os.environ['THREADS']), 'config': config(),
             'source': source(), 'build': build_data, 'host': host_data,
             'kernel': command('uname', '-r'), 'nvme': command('nvme', 'version'),
+            'pilot_db_bench': os.environ.get('PILOT_DB_BENCH', ''),
             'tail_basis': 'overwrite elapsed time; last third; timestamp interpolation'}
     save(path, data)
 

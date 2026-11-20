@@ -22,6 +22,13 @@ for v in FEMU_START_CMD FEMU_BIN FEMU_GUEST_IMAGE GUEST_SSH GUEST_DIR; do
 done
 [[ "$REP" =~ ^[1-9][0-9]*$ ]] || { echo "REP 값 이상"; exit 1; }
 [[ -z "${PILOT_DB_BENCH:-}" || "$PILOT_DB_BENCH" == map ]] || { echo "PILOT_DB_BENCH 값 이상 (비우거나 map)"; exit 1; }
+if [[ "${PILOT_DB_BENCH:-}" == map ]]; then   # 작은 시험 전용: 본 run 조건이면 거부
+  for U in $UTILS; do
+    if [[ " $TARGET_UTILS " == *" $U "* ]] && python3 -c 'import sys; sys.exit(float(sys.argv[1]) < 1)' "$OVERWRITE_MULT"; then
+      echo "PILOT_DB_BENCH=map 은 작은 시험 전용. 본 run 조건(사용률 $U ∈ TARGET_UTILS, OVERWRITE_MULT=$OVERWRITE_MULT ≥ 1)이라 거부"; exit 1
+    fi
+  done
+fi
 for POL in $POLICIES; do
   [[ " $POLICY_NAMES " == *" $POL "* ]] || { echo "정책 이름 이상: $POL (가능: $POLICY_NAMES)"; exit 1; }
 done
