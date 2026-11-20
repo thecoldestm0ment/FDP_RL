@@ -12,7 +12,7 @@ Thread(s) per core:                      2
 Core(s) per socket:                      16
 Socket(s):                               2
 Stepping:                                7
-CPU(s) scaling MHz:                      31%
+CPU(s) scaling MHz:                      32%
 CPU max MHz:                             3900.0000
 CPU min MHz:                             1200.0000
 BogoMIPS:                                5800.00
@@ -20,5 +20,5 @@ Flags:                                   fpu vme de pse tsc msr pae mce cx8 apic
 Virtualization:                          VT-x
 Linux 6.8.0-149-generic x86_64
                total        used        free      shared  buff/cache   available
-Mem:             251           6         207           0          38         244
+Mem:             251           6         135           0         110         244
 Swap:              7           0           7

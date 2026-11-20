@@ -3,8 +3,8 @@
 - 설정: GC 90/99, 덮어쓰기 2배, TorFS 메타 포함 공간 식, 모든 RUH II (자세한 값은 `exp/fdp_pilot/config.env`, README)
 - 판정은 **한 컴퓨터 안의 run끼리만** (`pilot.py summary` 가 컴퓨터·QEMU·빌드·실험 설정이 다른 run을 섞으면 판정 거부)
 - 폴더
-  - `ingu/`: user2 PC (본 실험). 70% single·lan, 93% single·lan·single6
-  - `lab/`: 연구실 서버 (재현). 93% single·lan·single6 (11/18–20)
+  - `ingu/`: user2 PC (본 실험). 70% single·lan·single6, 93% single·lan·single6
+  - `lab/`: 연구실 서버 (재현). 93% single·lan·single6 (11/18–20), 85% single·lan·single6 (11/20–21, 세 run 동시)
 - 올린 파일: `rocksdb_LOG_*.gz`(전체 LOG), `db_bench_*.stderr*` 제외 (두 컴퓨터 같은 규칙). 원본은 각 컴퓨터에 보관
   - `summary` 는 전체 LOG가 있어야 VALID 판정 → `summary.txt` 는 각 컴퓨터에서 run 직후 생성한 것 (저장소 사본으로 다시 돌리면 INVALID)
 
@@ -31,7 +31,7 @@
 | 게스트 db_bench 빌드 | KVM | KVM (TCG 빌드는 버리고 `make clean` 후 다시) |
 | 실험 코드 | 39353eaf1 | 호스트 39353eaf1, 게스트 016e93edd (실행 스크립트 같음) |
 | 게스트 자동 업데이트 | 끔 | 끔 (`apt-daily*.timer` disable, `unattended-upgrades` mask) |
-| 실행 방식 | 한 run씩 순서대로 | 같음 (single → lan → single6) |
+| 실행 방식 | 한 run씩 순서대로 | 93%: 같음 (single → lan → single6). 85%: **세 run 동시** (게스트 이미지 복사본 2개, 포트 18080·18081·18082, 장치 파일·QMP 소켓 따로) |
 | 93% run 길이 | 24–25 h | 12.3–12.6 h |
 
 - 같은 것: `config.env` 의 실험 값 전부 (run 시작 때 호스트·게스트 대조), FEMU 소스, RocksDB·TorFS·Lan 소스, 가속(KVM)
@@ -85,6 +85,24 @@ exec sudo -A FEMU_MBE_FILE="$FEMU_MBE_FILE" $HOME/FDP_RL/build-femu/qemu-system-
 - 두 컴퓨터 모두 가운데→뒤 1/3 WAF 변화 > 5% (아직 변하는 중)
 - 70% 관문: user2 PC gain +8.85% (< 10%) → 규칙상 판정 보류, 93%는 관찰용 (`ingu/summary.txt`). 서버는 70% 안 돌림 → 서버 summary도 판정 보류
 
+### 사용률별 (뒤 1/3 WAF)
+
+| | 70% user2 PC | 85% 서버 | 93% 서버 | 93% user2 PC |
+|---|---|---|---|---|
+| WAF single / lan / single6 | 2.773 / 2.527 / 2.908 | 4.482 / 4.606 / 4.968 | 7.733 / 8.180 / 9.236 | 8.126 / 8.622 / 9.667 |
+| lan vs single (WAF 감소율) | +8.85% | −2.77% | −5.78% | −6.10% |
+| 열린 RU 비용 (single → single6) | +4.88% | +10.84% | +19.43% | +18.96% |
+| 배치 효과 (single6 → lan) | +13.10% | +7.28% | +11.43% | +10.81% |
+| [추정] 여유 RU single / lan | 58.9 / 54.2 | 30.8 / 26.8 | 16.0 / 12.0 | 15.5 / 11.6 |
+| 실제 최고 사용률 | 69.1% | 83.7–83.8% | 91.8% | 91.8% |
+
+- 70% single6: user2 PC (`ingu/single6_u0.70`, PR #6)
+- 85% 예측 (11/20, 결과 전, Obsidian 기록): lan vs single 약 0% ±3%, 열린 RU 비용 약 +12%, 배치 효과 +11~13%
+  - lan vs single −2.77%, 열린 RU 비용 +10.84% → 예측 범위 안
+  - 배치 효과 +7.28% → 예측보다 낮음
+- 열린 RU 비용 ≈ 0.78 × 4 / 여유 RU(single) 식 하나로 세 사용률이 맞음: 70% 식 +5.3 (실측 +4.9), 85% 식 +10.1 (실측 +10.8), 93% 계수 맞춘 점 [계산]
+- 뒤집히는 지점: 70%와 85% 사이 (두 점이 다른 컴퓨터)
+
 ## GC 복사 분해 (`gc_decay.py`)
 
 - `python3 gc_decay.py <ingu|lab> <0.70|0.93>` (이 폴더에서)
@@ -109,6 +127,19 @@ exec sudo -A FEMU_MBE_FILE="$FEMU_MBE_FILE" $HOME/FDP_RL/build-femu/qemu-system-
 - 93%에서는 수명 짧은 L0–L3도 쓴 양보다 많이 옮겨짐 → 여유 6.5%에서는 짧은 데이터도 무효화 전에 GC에 잡힘 [추정]
 - 두 컴퓨터 같은 패턴. lan 손해가 특정 구간(50–60%, 70–90%)에서 튐 (−8 ~ −13%), 원인 미확인
 - 한계: victim별 기록 없음 (RU 단위 유효율·나이 모름) → 다음 배치에서 GC victim 로깅
+
+배치 효과 분해 (single6 − lan, overwrite 뒤 30% 구간, host 1 B당; `gc_decay.py <폴더> <사용률> single6 lan`):
+
+| | 70% (user2 PC) | 85% (서버) | 93% (서버) |
+|---|---|---|---|
+| 처음 옮김 차이 | +0.10 ~ +0.12 | +0.04 ~ +0.08 | +0.07 ~ +0.08 |
+| 다시 옮김 차이 | +0.26 ~ +0.31 | +0.28 ~ +0.33 | +0.64 ~ +1.27 |
+| 합 (WAF 대비) | 0.38 ~ 0.42 (WAF 약 2.9) | 0.35 ~ 0.39 (WAF 약 5) | 0.71 ~ 1.34 (WAF 약 9) |
+| lan GC 칸 유효 비중 | 29–35% | 60–73% | 92–93% |
+
+- 배치 효과(%) = 아낀 양 ÷ WAF. 아낀 양은 70%·85% 비슷 (약 0.4)한데 85%는 WAF가 약 2배 → %가 절반 [계산]
+- 93%는 다시 옮김에서 아끼는 양이 커져서 % 가 다시 오름 → 사용률에 따라 오르내림 (13.1 → 7.3 → 11.4%)
+- 85%는 세 run 동시, 70%는 다른 컴퓨터 → 조건 차이가 섞여 있음. run 1번씩 [추정: 해석]
 
 ## 서버 결과를 저장소에 올릴 때
 
