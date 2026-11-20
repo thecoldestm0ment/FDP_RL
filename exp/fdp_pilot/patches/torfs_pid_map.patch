@@ -1,0 +1,83 @@
+diff --git a/fs/fs_torfs.cc b/fs/fs_torfs.cc
+index 94ccd23..6e8f6da 100644
+--- a/fs/fs_torfs.cc
++++ b/fs/fs_torfs.cc
+@@ -15,6 +15,7 @@
+  * limitations under the License.
+ */
+ 
++#include <cstdlib>
+ #include "fs_torfs.h"
+ 
+ #include <sys/time.h>
+@@ -227,6 +228,12 @@ IOStatus TorFS::NewWritableFile(const std::string& fname,
+   if (fname.find("MANIFEST") != std::string::npos) {
+     pId = 4;
+   }
++  pId = PilotMapPid(pId);  // [pilot] TORFS_PID_MAP (unset: unchanged)
++  // [pilot] TORFS_FORCE_PID=<n> overrides the default PID as well.
++  const char* force_pid = getenv("TORFS_FORCE_PID");
++  if (force_pid != nullptr && force_pid[0] != '\0') {
++    pId = atoi(force_pid);
++  }
+ 
+   files_[new_fname] = new FDPFile(new_fname, 0, pId, io_interface_, logger_);
+   files_[new_fname]->uuididx_ = uuididx_++;
+diff --git a/fs/fs_torfs.h b/fs/fs_torfs.h
+index caab4cc..bda00c2 100644
+--- a/fs/fs_torfs.h
++++ b/fs/fs_torfs.h
+@@ -58,6 +58,27 @@
+ #define SMALL_DEAL (64 * 1024)
+ 
+ #define FDP_RU_SIZE 13079937024ul
++
++// [pilot] TORFS_PID_MAP="a,b,c,d,e" remaps default placement ID i
++// (0 WAL and other files, 1-3 level hints, 4 MANIFEST) to the i-th entry.
++// Unset or empty: unchanged. A missing or non-numeric entry keeps that PID.
++// TORFS_FORCE_PID, when set, is applied after this and wins.
++#include <cstdlib>
++#include <cstring>
++static inline int PilotMapPid(int pid) {
++  const char* map = getenv("TORFS_PID_MAP");
++  if (map == nullptr || map[0] == '\0' || pid < 0) return pid;
++  const char* p = map;
++  for (int i = 0; i < pid; i++) {
++    p = strchr(p, ',');
++    if (p == nullptr) return pid;
++    p++;
++  }
++  char* end = nullptr;
++  long v = strtol(p, &end, 10);
++  if (end == p || v < 0) return pid;
++  return static_cast<int>(v);
++}
+ #define META_SEGMENT_CAPACITY (1 * 1024 * 1024 * 1024ul)
+ 
+ namespace rocksdb {
+diff --git a/fs/fs_torfs_io.cc b/fs/fs_torfs_io.cc
+index cddf149..4f6f4c2 100644
+--- a/fs/fs_torfs_io.cc
++++ b/fs/fs_torfs_io.cc
+@@ -15,6 +15,7 @@
+  * limitations under the License.
+ */
+ 
++#include <cstdlib>
+ #include <string.h>
+ #include <sys/time.h>
+ #include <unistd.h>
+@@ -488,6 +489,13 @@ void FDPWritableFile::SetWriteLifeTimeHint(Env::WriteLifeTimeHint hint) {
+   fdp_file_->level_ = hint - Env::WLTH_SHORT;
+   fdp_file_->pid_ =
+       fdp_file_->level_ >= MAX_PID ? (MAX_PID - 1) : fdp_file_->level_;
++  fdp_file_->pid_ = PilotMapPid(fdp_file_->pid_);  // [pilot] TORFS_PID_MAP
++  // [pilot] TORFS_FORCE_PID=<n> sends every file to one placement ID
++  // (used for the "Single PID" baseline).
++  const char* force_pid = getenv("TORFS_FORCE_PID");
++  if (force_pid != nullptr && force_pid[0] != '\0') {
++    fdp_file_->pid_ = atoi(force_pid);
++  }
+ }
+ 
+ IOStatus FDPWritableFile::RangeSync(uint64_t offset, uint64_t nbytes,

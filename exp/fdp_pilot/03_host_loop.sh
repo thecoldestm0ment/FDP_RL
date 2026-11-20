@@ -4,6 +4,8 @@
 #   run마다 FEMU를 새로 띄우고, 게스트 UUID가 이 run의 UUID인지 확인한 뒤에만 실행
 #   한 컴퓨터 안에서: ./03_host_loop.sh "single lan" 0.70 → summary 확인 → ./03_host_loop.sh "single lan" 0.93
 #   (시간 남으면) ./03_host_loop.sh single6 0.93
+#   추가 정책: ./03_host_loop.sh "single4 lan3" 0.93  (lan3는 게스트에서 ./00_build.sh femu-map 먼저)
+#   패치 중립 작은 시험: PILOT_DB_BENCH=map HOST_RESULTS=~/fdp_smoke_map FORCE=1 OVERWRITE_MULT=0.2 ./03_host_loop.sh lan 0.35
 #   작은 시험: HOST_RESULTS=~/fdp_smoke_gc90 FORCE=1 OVERWRITE_MULT=0.2 ./03_host_loop.sh lan 0.35
 #   준비: README "호스트 준비". 게스트 sudo NOPASSWD, 호스트·게스트 스크립트·config.env 동일
 # =====================================================================
@@ -19,8 +21,9 @@ for v in FEMU_START_CMD FEMU_BIN FEMU_GUEST_IMAGE GUEST_SSH GUEST_DIR; do
   [[ -n "${!v}" ]] || { echo "config.env 의 $v 비어 있음"; exit 1; }
 done
 [[ "$REP" =~ ^[1-9][0-9]*$ ]] || { echo "REP 값 이상"; exit 1; }
+[[ -z "${PILOT_DB_BENCH:-}" || "$PILOT_DB_BENCH" == map ]] || { echo "PILOT_DB_BENCH 값 이상 (비우거나 map)"; exit 1; }
 for POL in $POLICIES; do
-  [[ "$POL" == single || "$POL" == lan || "$POL" == single6 ]] || { echo "정책 이름 이상: $POL"; exit 1; }
+  [[ " $POLICY_NAMES " == *" $POL "* ]] || { echo "정책 이름 이상: $POL (가능: $POLICY_NAMES)"; exit 1; }
 done
 for U in $UTILS; do [[ "$U" =~ ^0\.[0-9]+$ ]] || { echo "사용률 값 이상: $U"; exit 1; }; done
 LOGDIR="$HOST_RESULTS/host_logs"
@@ -77,11 +80,11 @@ for U in $UTILS; do
     python3 "$HERE/runcheck.py" host "$HOST_MANIFEST" "$RUN_ID"
     if [[ -f "$HOST_RESULTS/$TAG/done" ]]; then
       # Reuse only a complete run with this source/config/host/QEMU provenance.
-      python3 - "$HERE" "$HOST_RESULTS/$TAG" "$HOST_MANIFEST" <<'PY'
+      python3 - "$HERE" "$HOST_RESULTS/$TAG" "$HOST_MANIFEST" "$POL" <<'PY'
 import sys
 sys.path.insert(0, sys.argv[1])
 import runcheck
-run, current = sys.argv[2:]
+run, current, policy = sys.argv[2:]
 m = runcheck.load(run + '/manifest.json')
 h = runcheck.load(current)
 if runcheck.validate(run)['status'] != 'VALID':
@@ -89,7 +92,7 @@ if runcheck.validate(run)['status'] != 'VALID':
 for key in ('hostname', 'qemu_sha256'):
     if m['host'][key] != h[key]:
         raise SystemExit('이미 끝난 run과 설정이 다름: ' + key + '. 새 결과 폴더(HOST_RESULTS)를 쓸 것')
-if runcheck.exp_config(m['host']['config']) != runcheck.exp_config(h['config']):
+if not runcheck.same_policy_config(m['host']['config'], h['config'], policy):
     raise SystemExit('이미 끝난 run과 실험 설정이 다름. 새 결과 폴더(HOST_RESULTS)를 쓸 것')
 if runcheck.run_scripts(m['host']['source']) != runcheck.run_scripts(h['source']):
     print('[주의] 이미 끝난 run과 실행 스크립트 버전이 다름 (실험 설정은 같아서 재사용)')
@@ -147,7 +150,7 @@ PY
     # 덜 끝난 결과는 게스트가 attempts/ 로 옮김. 여기서는 아무것도 안 지움
     REMOTE_LOG="fdp_run_${TAG}_${RUN_ID}.log"
     REMOTE_PID="fdp_run_${TAG}_${RUN_ID}.pid"
-    gssh "$GUEST_ENV && { nohup sudo -n -E env WORK=\"\$WORK\" RESULTS=\"\$RESULTS\" FORCE=1 FRESH_FEMU=1 NO_SUMMARY=1 REP=$REP FEMU_RUN_ID=$RUN_ID OVERWRITE_MULT=$OVERWRITE_MULT ./02_femu_run.sh '$POL' '$U' > \"\$HOME/$REMOTE_LOG\" 2>&1 < /dev/null & echo \$! > \"\$HOME/$REMOTE_PID\"; } && echo started"
+    gssh "$GUEST_ENV && { nohup sudo -n -E env WORK=\"\$WORK\" RESULTS=\"\$RESULTS\" FORCE=1 FRESH_FEMU=1 NO_SUMMARY=1 REP=$REP FEMU_RUN_ID=$RUN_ID OVERWRITE_MULT=$OVERWRITE_MULT PILOT_DB_BENCH=${PILOT_DB_BENCH:-} ./02_femu_run.sh '$POL' '$U' > \"\$HOME/$REMOTE_LOG\" 2>&1 < /dev/null & echo \$! > \"\$HOME/$REMOTE_PID\"; } && echo started"
     fails=0
     while :; do
       sleep "$POLL_SEC"

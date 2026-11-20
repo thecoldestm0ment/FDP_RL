@@ -58,5 +58,23 @@ class BuildGuardTest(unittest.TestCase):
         self.assertEqual(sentinel.read_text(), 'partial build\n')
 
 
+class PatchTest(unittest.TestCase):
+    def test_pid_map_patch_keeps_force_pid_lines(self):
+        """femu-map 트리는 torfs_pid_map.patch 하나만 씀 → force_pid 변경을 전부 포함해야 함."""
+        def added(name):
+            with open(HERE / 'patches' / name, newline='') as f:
+                return [l.rstrip('\r\n') for l in f if l.startswith('+') and not l.startswith('+++')]
+        force, mapped = added('torfs_force_pid.patch'), added('torfs_pid_map.patch')
+        for line in force:
+            self.assertIn(line, mapped)
+        self.assertTrue(any('PilotMapPid' in l for l in mapped))
+
+    def test_unknown_mode_lists_femu_map(self):
+        r = subprocess.run(['bash', str(HERE / '00_build.sh'), 'bogus'], text=True, capture_output=True,
+                           env=os.environ | {'WORK': tempfile.gettempdir()})
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn('femu-map', r.stdout + r.stderr)
+
+
 if __name__ == '__main__':
     unittest.main()

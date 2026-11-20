@@ -361,6 +361,16 @@ def cmd_devcheck(a):
         bad.append(f"placement handle 목록 {got_phs}, 기대 {want_phs}")
     if want_nruh - 1 in got_phs:
         bad.append(f"GC 전용 RUH {want_nruh - 1} 가 namespace에 노출됨")
+    pid_map = env(f"TORFS_PID_MAP_{a.policy}", str, "")
+    if pid_map:
+        try:
+            targets = [int(x) for x in pid_map.split(",")]
+        except ValueError:
+            targets = []
+        if len(targets) != 5 or any(not 0 <= t < len(want_phs) for t in targets):
+            bad.append(f"TORFS_PID_MAP_{a.policy}={pid_map}: 숫자 5개, 각각 0~{len(want_phs) - 1} 이어야 함")
+        elif sorted(set(targets)) != list(range(len(want_phs))):
+            bad.append(f"TORFS_PID_MAP_{a.policy}={pid_map}: 안 쓰는 handle 있음 ({len(want_phs)}개 중)")
     inv = u["invalid_pid_cmds"] if u else None
     if u and inv is None:
         bad.append("이 FEMU 사용량 로그에 잘못된 PID 카운터 없음 (version 1). fdp-pilot 브랜치 FEMU인지 확인")
@@ -370,6 +380,7 @@ def cmd_devcheck(a):
              f"nruh={len(types)}  (기대 {want_nruh})",
              "ruh_types=" + " ".join(f"{i}:{RUHT_NAMES.get(t, f'?{t}')}" for i, t in enumerate(types)),
              "placement(pid->ruh)=" + " ".join(f"{p}->{r}" for p, r in sorted(pl)),
+             "torfs_pid_map=" + (env(f"TORFS_PID_MAP_{a.policy}", str, "") or "-"),
              f"invalid_pid_cmds_at_start={'-' if inv is None else inv}",
              "check=" + ("OK" if not bad else "FAIL: " + "; ".join(bad))]
     with open(a.out, "w") as f:
@@ -1221,7 +1232,8 @@ def ruh_shares(path, ru_blocks):
     return {p: acc[p] / tot for p in sorted(acc)} if tot else None
 
 
-RUN_RE = re.compile(r"^(single6|single|lan)_u([\d.]+)(?:_r(\d+))?$")
+POLICIES = ("single", "lan", "single6", "single4", "lan3")   # config.env POLICY_NAMES 와 같아야 함 (test)
+RUN_RE = re.compile(r"^(single6|single4|single|lan3|lan)_u([\d.]+)(?:_r(\d+))?$")
 
 GC_LOG_RE = re.compile(r"gc threshold(_high)? \((\d+)%\) (\d+)/(\d+) RU")
 
@@ -1290,6 +1302,36 @@ def run_lba_bytes(d):
         except (ValueError, IndexError):
             pass
     return env("LBA_BYTES", int, 512)
+
+
+def key_diff(k1, k2):
+    """comparison_key 두 개에서 다른 항목. build는 다른 필드 이름 목록, 나머지는 빈 목록."""
+    a, b = json.loads(k1), json.loads(k2)
+    out = {}
+    for part in sorted(set(a) | set(b)):
+        if a.get(part) == b.get(part):
+            continue
+        if part == "build" and isinstance(a.get(part), dict) and isinstance(b.get(part), dict):
+            out[part] = sorted(f for f in set(a[part]) | set(b[part]) if a[part].get(f) != b[part].get(f))
+        else:
+            out[part] = []
+    return out
+
+
+def variant_lines(waf, u, only=None):
+    """single4·lan3 분해 (03 lan3 계획의 식). waf = {(정책, 사용률): 뒤 1/3 WAF}. only면 그 정책이 들어간 줄만."""
+    rows = [("single4", "single", "열린RU +2 칸 비용 (WAF_single4/WAF_single − 1)", False),
+            ("lan3", "single4", "열린RU 수 동일(4) 배치 효과 (1 − WAF_lan3/WAF_single4)", True),
+            ("lan3", "lan", "lan3 개선율 (1 − WAF_lan3/WAF_lan)", True),
+            ("lan3", "single", "lan3 vs single WAF 감소율 (1 − WAF_lan3/WAF_single)", True)]
+    out = []
+    for x, base, label, reduction in rows:
+        if only and only not in (x, base):
+            continue
+        if (x, u) in waf and (base, u) in waf:
+            v = 1 - waf[(x, u)] / waf[(base, u)] if reduction else waf[(x, u)] / waf[(base, u)] - 1
+            out.append(f"{label}: {v*100:+.2f}%")
+    return out
 
 
 def cmd_summary(a):
@@ -1371,10 +1413,25 @@ def cmd_summary(a):
     if not res:
         print("판정 보류: 완료·계측·안정성 검증을 통과한 비교 결과 없음.")
         return
-    keys = {r["key"] for r in res}
-    if len(keys) != 1:
-        print("판정 보류: 컴퓨터·QEMU·빌드·커널·실험 설정이 다른 run이 섞임. 한 컴퓨터·같은 설정 결과만 비교할 것.")
-        return
+    # 기준 묶음: single·lan이 있는 비교 키 중 run이 가장 많은 것. 빌드만 다른 run(예: lan3 = PID 매핑 패치)은
+    #   판정·주 비교에서 빼고 아래 "참고"로만 비교. 컴퓨터·QEMU·커널·실험 설정이 다르면 지금처럼 판정 보류
+    by_key = {}
+    for r in res:
+        by_key.setdefault(r["key"], []).append(r)
+    others = []
+    if len(by_key) > 1:
+        main = max(by_key.values(), key=lambda g: (any(r["policy"] == "single" for r in g)
+                                                   and any(r["policy"] == "lan" for r in g), len(g)))
+        others = [r for r in res if r["key"] != main[0]["key"]]
+        diffs = {r["run"]: key_diff(main[0]["key"], r["key"]) for r in others}
+        if any(set(d) - {"build"} for d in diffs.values()):
+            print("판정 보류: 컴퓨터·QEMU·빌드·커널·실험 설정이 다른 run이 섞임. 한 컴퓨터·같은 설정 결과만 비교할 것.")
+            for run, d in diffs.items():
+                print(f"  {run}: 기준 run과 다른 항목 {', '.join(sorted(d))}")
+            return
+        print("[빌드 다름: 판정·주 비교에서 뺌, 아래 참고 비교에만] " + "; ".join(
+            f"{run} ({', '.join(d['build'])})" for run, d in diffs.items()))
+        res = main
     if len({r["src"] for r in res}) > 1:
         print("[주의] run마다 실행 스크립트 버전이 다름 (실험 설정·빌드는 같음). 버그 수정 등 변경 내용을 같이 기록할 것")
     unstable = [r["run"] for r in res if r.get("unstable")]
@@ -1389,10 +1446,24 @@ def cmd_summary(a):
         if ("single", u) in waf and ("lan", u) in waf:
             gains[u] = 1 - waf[("lan", u)] / waf[("single", u)]
             print(f"사용률 {u:.2f}: WAF 감소율 {gains[u]*100:+.2f}% = 1 − WAF_lan/WAF_single (시간 뒤1/3)")
+        elif variant_lines(waf, u) or (("single6", u) in waf and ("single", u) in waf):
+            print(f"사용률 {u:.2f}: (single·lan 짝 없음)")
         if ("single6", u) in waf and ("single", u) in waf:
             print(f"  추가 열린RU 조건의 WAF 변화율: {(waf[('single6', u)]/waf[('single', u)]-1)*100:+.2f}%")
         if ("single6", u) in waf and ("lan", u) in waf:
             print(f"  열린RU 수 동일 조건의 배치 WAF 감소율: {(1-waf[('lan', u)]/waf[('single6', u)])*100:+.2f}%")
+        for line in variant_lines(waf, u):
+            print("  " + line)
+    if others:
+        allw = dict(waf)
+        for r in others:
+            allw.setdefault((r["policy"], r["util"]), r["waf_tail"])
+        for r in others:
+            lines = variant_lines(allw, r["util"], only=r["policy"])
+            if lines:
+                print(f"[참고, 빌드 다름] {r['run']} (WAF 뒤1/3 {r['waf_tail']:.4f}):")
+                for line in lines:
+                    print("  " + line)
     if .70 not in gains:
         print("판정 보류: 같은 컴퓨터의 유효한 70% single·lan 짝 필요.")
         return
@@ -1430,7 +1501,7 @@ def main():
     sp.add_parser("lbasize")
     sp.add_parser("ruhtypes")
     p = sp.add_parser("devcheck")
-    p.add_argument("policy", choices=["single", "lan", "single6"])
+    p.add_argument("policy", choices=POLICIES)
     p.add_argument("out")
     sp.add_parser("pidcheck")
     p = sp.add_parser("pcsummary")

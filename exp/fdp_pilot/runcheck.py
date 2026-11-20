@@ -16,6 +16,7 @@ LEVEL_BASE_MB TARGET_FILE_MB TARGET_FILE_MULT WRITE_BUFFER_MB LEVEL_MULT NUM_LEV
 L0_TRIGGER L0_SLOWDOWN L0_STOP MIN_WB_MERGE MAX_WB_NUMBER SOFT_PENDING_BYTES
 HARD_PENDING_BYTES DELAYED_WRITE_RATE BG_JOBS COMPRESSION DEV_CAPACITY_GIB RU_MIB
 EXPECT_RUHT NRUH_single NRUH_lan NRUH_single6 PHS_single PHS_lan PHS_single6
+NRUH_single4 NRUH_lan3 PHS_single4 PHS_lan3 TORFS_PID_MAP_lan3
 SPACE_SLOPE SPACE_FIXED_GIB SPACE_MARGIN TORFS_META_GIB OVERWRITE_MULT THREADS SEED
 TRACK_STATS STATS_INTERVAL_SEC OPTCHECK_STRICT SAVE_FULL_LOG RUH_METHOD COUNTER_METHOD FDP_ENDGRP FEMU_USAGE_LID LBA_BYTES SAMPLE_SEC UTIL_TOL MAX_SAMPLE_GAP_FACTOR STABLE_TOL MIN_GAIN_LOW COLLAPSE_RATIO BORDER_BAND
 FEMU_BLKS_PER_PL FEMU_GC_THRES FEMU_GC_THRES_HIGH FEMU_ISOLATION_MODE FEMU_NAND_LAT
@@ -28,8 +29,25 @@ JUDGE_KEYS = {'UTIL_TOL', 'STABLE_TOL', 'MIN_GAIN_LOW', 'COLLAPSE_RATIO', 'BORDE
 
 
 def exp_config(cfg):
-    """실험 조건만 (판정 기준값 제외)."""
+    """실험 조건만 (판정 기준값 제외). 호스트·게스트 대조는 이걸로 (정책 표까지 같아야 함)."""
     return {k: v for k, v in cfg.items() if k not in JUDGE_KEYS}
+
+
+# 정책별 장치 정의 표 (NRUH_<정책>, PHS_<정책>, TORFS_PID_MAP_<정책>)
+#   run끼리 비교·재사용 판단에서는 뺌: 정책을 추가해도 기존 run과 비교 가능해야 함.
+#   run이 실제로 쓴 장치는 devcheck(device.txt)가 run마다 확인
+POLICY_TABLE_RE = re.compile(r'^(NRUH|PHS|TORFS_PID_MAP)_')
+
+
+def compare_config(cfg):
+    """run끼리 비교용 실험 조건: 판정 기준값·정책 표 제외."""
+    return {k: v for k, v in exp_config(cfg).items() if not POLICY_TABLE_RE.match(k)}
+
+
+def same_policy_config(old, new, policy):
+    """같은 정책 run을 재사용해도 되는지: 비교용 조건 + 그 정책 자기 표(NRUH·PHS·TORFS_PID_MAP)가 같아야 함."""
+    own = [f'{t}_{policy}' for t in ('NRUH', 'PHS', 'TORFS_PID_MAP')]
+    return compare_config(old) == compare_config(new) and all(old.get(k) == new.get(k) for k in own)
 
 
 def run_scripts(src):
@@ -118,8 +136,8 @@ def guest(path, binary, policy, util, n, w):
 
 def comparison_key(manifest):
     """같이 비교해도 되는 run인지: 실험 조건·빌드·커널·nvme·컴퓨터·QEMU가 같아야 함.
-    run UUID·목표 사용률·판정 기준값·스크립트 해시는 뺌 (스크립트 차이는 source_key 로 [주의]만)."""
-    return json.dumps({'config': exp_config(manifest['config'])} |
+    run UUID·목표 사용률·판정 기준값·정책 표·스크립트 해시는 뺌 (스크립트 차이는 source_key 로 [주의]만)."""
+    return json.dumps({'config': compare_config(manifest['config'])} |
                       {k: manifest[k] for k in ('build', 'kernel', 'nvme')} |
                       {'host': {k: manifest['host'][k] for k in ('hostname', 'qemu_sha256')}}, sort_keys=True)
 

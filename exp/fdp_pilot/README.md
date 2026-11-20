@@ -4,15 +4,16 @@
 줄어들면 → 방향 A (무너짐 원인 연구).
 
 > **11/13 고정:** 70%·93%·모든 정책을 **한 컴퓨터 안에서** 돌리고 판정도 그 컴퓨터 결과로만 함. 11/26 전 새 정책·설정 추가 없음 (버그 수정만). lan3·70% single6·REP=2·새 workload는 후속연구.
+> **11/20 예외:** 서버 85% 묶음, 93% **lan3·single4** 추가 (아래 "추가 정책 (11/20)"). 70% lan3·70% single6·REP=2는 계속 미룸.
 
 ## 한눈에
 
 | 항목 | 값 |
 |---|---|
-| 정책 | **single** (전부 PID 0) · **lan** (WAL 0 / L0–L3 1 / L4 2 / L5+ 3 / MANIFEST 4) · 대조 **single6** (single 배치, 열린 RU는 lan과 같게, 93%에서 시간 남으면) |
+| 정책 | **single** (전부 PID 0) · **lan** (WAL 0 / L0–L3 1 / L4 2 / L5+ 3 / MANIFEST 4) · 대조 **single6** (single 배치, 열린 RU는 lan과 같게, 93%에서 시간 남으면) · (11/20) 대조 **single4**, 우리 변형 **lan3** |
 | 사용률 | 70%, 93% (삭제 대기 파일 포함 최대 사용량 ÷ 사용자 용량) |
 | workload | load(`filluniquerandom`, 키 N개) → overwrite(균등 랜덤, 데이터 **2배**) |
-| 장치 | FEMU bbssd, 모든 RUH II, RU 128 MiB × 211 (OP 9.9%), 사용자 24 GiB, **GC 90/99** (WARP §4.3 GC 시작 기준 참고). RUH: single 2 · lan 6 · single6 6 |
+| 장치 | FEMU bbssd, 모든 RUH II, RU 128 MiB × 211 (OP 9.9%), 사용자 24 GiB, **GC 90/99** (WARP §4.3 GC 시작 기준 참고). RUH: single 2 · lan 6 · single6 6 · single4 4 · lan3 4 (GC 전용 = 마지막 RUH) |
 | 측정 | overwrite 구간 WAF (media ÷ host), RUH별 쓰기, 실제 사용률, 여유 RU 추정, 가운데·뒤 1/3 WAF 차 (안정 확인) |
 | 공간 | (PC 보정 식 1.0134 × 논리 + 3.047 GiB) × 1.02 + TorFS 메타 2 GiB = 목표 × 24 GiB → 논리 70% 11.3 GiB, 93% 16.6 GiB |
 | 반복 | 1번 (추가 반복은 후속연구) |
@@ -42,6 +43,27 @@ gain = 1 − WAF_lan / WAF_single (overwrite 뒤 1/3)
   - 열린 RU 비용 = WAF_single6 / WAF_single − 1 (RUH 4개를 더 열어 둔 값)
   - 배치 효과 = 1 − WAF_lan / WAF_single6 (열린 RU 수가 같을 때 lan 배치 몫)
 
+### 추가 정책 (11/20): single4 · lan3
+
+| 정책 | 배치 | RUH (GC 포함) | handle | db_bench |
+|---|---|---|---|---|
+| single4 (대조) | 전부 PID 0 (`TORFS_FORCE_PID=0`) | 4 (0 데이터, 1–2 빈 채로 열림, 3 GC) | `0` | 기존 `db_bench_torfs` |
+| lan3 (**우리 변형, Lan 원 배치 아님**) | {WAL, MANIFEST, L0–L3} / {L4} / {L5+} | 4 (0–2 데이터, 3 GC) | `0:1:2` | `db_bench_torfs_map` |
+
+- lan3 PID: TorFS 기본 PID(0 WAL, 1 L0–L3, 2 L4, 3 L5+, 4 MANIFEST)를 `TORFS_PID_MAP_lan3="0,0,1,2,0"`(config.env)로 바꿈 → 02_femu_run.sh 가 `TORFS_PID_MAP` 으로 db_bench에 넘김
+  - FEMU `namespace_phls` 는 같은 RUH를 두 번 못 넣음 → 장치 쪽 매핑 불가, TorFS에서 바꿈
+  - `patches/torfs_pid_map.patch` = force_pid 패치 전부 + `TORFS_PID_MAP`. 환경변수 없으면 force_pid 패치와 같은 동작 (`PilotMapPid` 가 PID 그대로 돌려줌)
+  - 빌드: 게스트에서 `./00_build.sh femu-map` → 트리 `rocksdb-femu-map`, `db_bench_torfs_map` 따로. 기존 `db_bench_torfs`·build.json 은 그대로 → single4는 기존 run과 같은 빌드
+- 분해 (03 lan3 계획의 식, summary가 출력)
+  - 칸 비용(RUH 4) = WAF_single4 / WAF_single − 1
+  - 배치 효과(3그룹) = 1 − WAF_lan3 / WAF_single4
+  - lan3 개선율 = 1 − WAF_lan3 / WAF_lan
+- **lan3는 빌드가 다름** (TorFS 패치 해시·db_bench 해시). summary 규칙
+  - 빌드만 다른 run → 판정·주 비교에서 빼고 "[참고, 빌드 다름]" 줄로 같은 컴퓨터 single·single4·lan과 비교
+  - 컴퓨터·QEMU·커널·실험 설정까지 다르면 지금처럼 판정 보류
+  - 패치 중립 확인: 작은 시험에서 새 바이너리로 lan(매핑 없음)을 돌려 RUH별 host 비율이 예전 작은 시험과 같은지 (`PILOT_DB_BENCH=map`, 작은 시험 전용)
+- 비교 키에서 정책 표(`NRUH_*`, `PHS_*`, `TORFS_PID_MAP_*`)는 뺌 → 정책을 추가해도 기존 run과 비교 가능. 실제 장치는 run마다 devcheck가 확인. 이미 끝난 run 재사용은 그 정책 자기 표가 같아야 함
+
 ### 왜 호스트에서 돌리나
 
 - FTL·GC 상태는 FEMU 프로세스 메모리에만 있음 → FEMU 재시작 = 새 SSD
@@ -53,7 +75,7 @@ gain = 1 − WAF_lan / WAF_single (overwrite 뒤 1/3)
 |---|---|---|---|
 | 1–4 | 인구 | PC 보정 → 공간 식 (**끝남**, 1배) | `results/pc_calib_v3_1x/` |
 | 5 | 지윤 | 호스트: FEMU 빌드, 게스트 이미지 | 아래 "호스트 준비" |
-| 6 | 지윤 | 게스트: TorFS 포함 db_bench 빌드 | `./00_build.sh femu` |
+| 6 | 지윤 | 게스트: TorFS 포함 db_bench 빌드 | `./00_build.sh femu` (lan3는 `./00_build.sh femu-map` 도) |
 | 7 | 지윤 | 게스트 `config.env` ★ 칸 (장치 이름) | — |
 | 8 | 지윤 | 장치 확인 (정책별) | 아래 "처음 띄웠을 때 확인" |
 | 9 | 실행 담당 | 작은 시험 한 바퀴 | `HOST_RESULTS=~/fdp_smoke_gc90 FORCE=1 OVERWRITE_MULT=0.2 ./03_host_loop.sh lan 0.35` |
@@ -165,8 +187,8 @@ Lan 논문은 OP·물리 용량·RU 개수·II/PI 미공개 (RUH 8개, RU 약 13
 | 항목 | 값 | 근거 |
 |---|---|---|
 | 격리 | 모든 RUH II (`fdp.isolation_mode=2`) | WARP §2: 상용 FDP SSD는 II. 원본 FEMU 모드 1은 마지막 RUH만 II → 이 브랜치에 모드 2 추가 |
-| RUH 수 | **single 2, lan 6** (데이터 + GC 전용 1), 대조 **single6 6** | FEMU는 안 쓰는 RUH에도 RU를 하나씩 열어 둠 (`ftl-fdp.c` 초기화). 8개 vs 6개 시험에서 media +18% → 쓰는 RUH만 둠. lan 구성(데이터 5 + GC 1)은 Lan과 같음. single6은 열린 RU 수만 lan과 맞춘 대조 |
-| placement handle | single·single6 `0`, lan `0:1:2:3:4` (`namespace_phls`) | GC RUH는 노출 안 함 |
+| RUH 수 | **single 2, lan 6** (데이터 + GC 전용 1), 대조 **single6 6**, (11/20) **single4 4 · lan3 4** | FEMU는 안 쓰는 RUH에도 RU를 하나씩 열어 둠 (`ftl-fdp.c` 초기화). 8개 vs 6개 시험에서 media +18% → 쓰는 RUH만 둠. lan 구성(데이터 5 + GC 1)은 Lan과 같음. single6은 열린 RU 수만 lan과 맞춘 대조 |
+| placement handle | single·single6·single4 `0`, lan `0:1:2:3:4`, lan3 `0:1:2` (`namespace_phls`) | GC RUH(마지막)는 노출 안 함 |
 | RU 크기 | 128 MiB = 채널 8 × LUN 8 × 512페이지 × 4 KiB | bbssd RU = superblock. WARP 공개 스크립트의 128 MiB 배치와 같음 |
 | 사용자 용량 | 24 GiB (RU 192개) | Lan 장치 RU 수(3.84 TB ÷ 13.08 GB ≈ 294)와 규모 비슷, 시간·메모리 안 |
 | OP | 10% → **RU 211개 (실제 9.9%)**, `blks_per_pl=211`, `fdp.nru=211` | WARP §5 기본값 OP 10%. WARP 스크립트 식: 24 × 1.1 × 1024 ÷ 128 = 211.2 → 211. `op_pcent=10`은 사용자 용량이 23.98 GiB가 돼서 RU 개수로 지정 |
@@ -225,7 +247,7 @@ gain −12.2% → 보류. 시계열로 본 원인:
 |---|---|---|---|
 | FEMU 띄운 직후 | 게스트 UUID 확인 (`03_host_loop.sh`) | `host_logs/host_<run>_<uuid>.json` | 새로 띄운 VM의 UUID가 아니면 실행 거부 (다른 VM 보호) |
 | 장치 쓰기 전 | `pilot.py freshcheck` | `fresh-state.txt` | host·media·유효 데이터가 0이 아니면 중단 (새 SSD인지) |
-| DB 열기 전 | `pilot.py devcheck <정책>` | `device.txt` | RUH 수 = `NRUH_<정책>`, 모든 RUH II, handle 목록 = `PHS_<정책>`, GC RUH 비노출, 잘못된 PID 0 중 하나라도 틀리면 중단 |
+| DB 열기 전 | `pilot.py devcheck <정책>` | `device.txt` | RUH 수 = `NRUH_<정책>`, 모든 RUH II, handle 목록 = `PHS_<정책>`, GC RUH 비노출, 잘못된 PID 0, (lan3) `TORFS_PID_MAP_<정책>` 값이 handle 범위 안·모든 handle 사용 중 하나라도 틀리면 중단 |
 | DB 열기 전 | `runcheck.py guest` | `manifest.json` | 빌드 기록·소스 commit·호스트와 게스트 스크립트·실험 설정이 다르면 중단 |
 | DB 연 직후 | `pilot.py optcheck` | `options_check_*.txt` | LOG `Options.*` ≠ `config.env` 이면 중단 (`OPTCHECK_STRICT=0`이면 기록만) |
 | 끝난 뒤 | `pilot.py pidcheck` | `pid_check.txt` | 잘못된 PID 쓰기 > 0 이면 `done` 없이 중단 |
@@ -286,7 +308,7 @@ gain −12.2% → 보류. 시계열로 본 원인:
 - WAF·뒤 1/3·RUH 비율은 `overwrite` 구간만. 대기·LOG 저장 중 쓰기는 따로. 공간·사용률 최대는 전체 구간
 
 **기록**
-- `run_params.txt`: SCALE·OVERWRITE_MULT(밖에서 받은 값 포함)·SEED·THREADS·`--num`·`--writes`·전체 연산 수·정책·`TORFS_FORCE_PID`
+- `run_params.txt`: SCALE·OVERWRITE_MULT(밖에서 받은 값 포함)·SEED·THREADS·`--num`·`--writes`·전체 연산 수·정책·`TORFS_FORCE_PID`·`TORFS_PID_MAP`·db_bench 경로
 - 실제 명령 `cmd_<단계>.txt`, 출력 `db_bench_<단계>.stdout`·`.stderr`
 - 키 공간은 늘 `--num=N`, 덮어쓰기 양은 `--writes` × 스레드 수로만
 

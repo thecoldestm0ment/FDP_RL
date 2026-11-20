@@ -4,8 +4,10 @@
 #
 #   ./00_build.sh pc     인구: PC용 (TorFS 없음, 일반 파일시스템)
 #   ./00_build.sh femu   지윤: FEMU 게스트용 (TorFS + Single PID 패치)
+#   ./00_build.sh femu-map  lan3용: TorFS + Single PID + PID 매핑(TORFS_PID_MAP) 패치. 트리·바이너리 따로
+#                           (femu 바이너리·build.json 은 안 건드림 → 기존 run과 같은 빌드 유지)
 #
-# 결과: $WORK/bin/db_bench_pc 또는 $WORK/bin/db_bench_torfs
+# 결과: $WORK/bin/db_bench_pc, db_bench_torfs, db_bench_torfs_map
 # 필요한 것(직접 설치):
 #   공통: git, make, g++, libgflags-dev, libsnappy-dev, liblz4-dev, libzstd-dev, zlib1g-dev
 #   femu: + liburing, xNVMe (TorFS README / Lan 저장소 compile/readme.md 참고)
@@ -15,9 +17,11 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 set -a; . "$HERE/config.env"; set +a
 
 MODE="${1:-}"
-if [[ "$MODE" != "pc" && "$MODE" != "femu" ]]; then
-  echo "사용법: $0 pc|femu"; exit 1
+if [[ "$MODE" != "pc" && "$MODE" != "femu" && "$MODE" != "femu-map" ]]; then
+  echo "사용법: $0 pc|femu|femu-map"; exit 1
 fi
+TORFS_PATCH="$HERE/patches/torfs_force_pid.patch"
+[[ "$MODE" == "femu-map" ]] && TORFS_PATCH="$HERE/patches/torfs_pid_map.patch"   # force_pid 내용 포함 + PID 매핑
 
 JOBS="${JOBS:-8}"
 [[ "$JOBS" =~ ^[1-9][0-9]*$ ]] || { echo "JOBS는 양의 정수여야 함"; exit 1; }
@@ -53,13 +57,13 @@ if [[ ! -d "$TREE" ]]; then
 fi
 
 PLUGINS=""
-if [[ "$MODE" == "femu" ]]; then
+if [[ "$MODE" != "pc" ]]; then
   # 3) TorFS: Lan이 쓴 커밋 + Single PID 패치(TORFS_FORCE_PID 환경변수)
   if [[ ! -d "$TREE/plugin/torfs" ]]; then
     git clone https://github.com/SamsungDS/TorFS.git "$TREE/plugin/torfs"
     ( cd "$TREE/plugin/torfs" && git checkout -q "$TORFS_COMMIT" \
-        && git apply "$HERE/patches/torfs_force_pid.patch" ) || fail_tree "TorFS checkout/PID 패치 적용 실패"
-    echo "[build] TorFS $TORFS_COMMIT + torfs_force_pid.patch 적용"
+        && git apply "$TORFS_PATCH" ) || fail_tree "TorFS checkout/PID 패치 적용 실패"
+    echo "[build] TorFS $TORFS_COMMIT + $(basename "$TORFS_PATCH") 적용"
   fi
   if ! pkg-config --exists xnvme 2>/dev/null; then
     echo "[build] xNVMe pkg-config 정보 없음. 설치 및 PKG_CONFIG_PATH 확인 후 재실행."; exit 1
@@ -70,9 +74,9 @@ fi
 # 재실행에서도 commit·패치 검증. 중간 실패 디렉터리를 정상 소스로 취급하지 않음.
 [[ "$(git -C "$TREE" rev-parse HEAD)" == "$ROCKSDB_COMMIT" ]] || fail_tree "RocksDB base mismatch"
 git -C "$TREE" apply --reverse --check "$LAN_PATCH" || fail_tree "Lan patch missing/different"
-if [[ "$MODE" == femu ]]; then
+if [[ "$MODE" != pc ]]; then
   [[ "$(git -C "$TREE/plugin/torfs" rev-parse HEAD)" == "$TORFS_COMMIT" ]] || fail_tree "TorFS commit mismatch"
-  git -C "$TREE/plugin/torfs" apply --reverse --check "$HERE/patches/torfs_force_pid.patch" || fail_tree "PID patch missing/different"
+  git -C "$TREE/plugin/torfs" apply --reverse --check "$TORFS_PATCH" || fail_tree "PID patch missing/different"
 fi
 
 # 4) 빌드
@@ -82,7 +86,7 @@ DEBUG_LEVEL=0 ROCKSDB_DISABLE_JEMALLOC=true DISABLE_WARNING_AS_ERROR=1 \
 EXTRA_CXXFLAGS="-include cstdint" ROCKSDB_PLUGINS="$PLUGINS" \
   make -j"$JOBS" db_bench
 
-OUT="$BIN/db_bench_$([[ $MODE == femu ]] && echo torfs || echo pc)"
+case "$MODE" in pc) OUT="$BIN/db_bench_pc" ;; femu) OUT="$BIN/db_bench_torfs" ;; femu-map) OUT="$BIN/db_bench_torfs_map" ;; esac
 cp db_bench "$OUT"
 python3 "$HERE/runcheck.py" build "$OUT" "$TREE" "$LAN_PATCH"
 echo "[build] 완료: $OUT"

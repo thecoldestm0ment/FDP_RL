@@ -16,12 +16,12 @@ import pilot
 import runcheck
 
 
-def fixture(root, policy='single', waf=2, host='same-host', util=.70):
+def fixture(root, policy='single', waf=2, host='same-host', util=.70, build='same'):
     d = root / f'{policy}_u{util:.2f}'
     d.mkdir()
     cfg = {'SAMPLE_SEC':'30', 'MAX_SAMPLE_GAP_FACTOR':'3', 'UTIL_TOL':'.03', 'STABLE_TOL':'.05'}
     m = {'schema':1, 'N':10, 'expected_writes':20, 'policy':policy, 'util':util,
-         'config':cfg, 'source':{'commit':'fixed'}, 'build':{'binary_sha256':'same'},
+         'config':cfg, 'source':{'commit':'fixed'}, 'build':{'binary_sha256':build},
          'kernel':'same', 'nvme':'same', 'host':{'hostname':host, 'qemu_sha256':'same'}}
     (d/'manifest.json').write_text(json.dumps(m))
     for name, data in {'done':'1', 'sampler.exit':'0', 'device.txt':'check=OK',
@@ -135,6 +135,75 @@ class AnalysisRegression(unittest.TestCase):
             text=summarize(root)
             self.assertIn('다른 run이 섞임',text)
             self.assertNotIn('사용률 0.70: WAF 감소율',text)
+
+    def test_build_only_difference_is_reference_not_verdict(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            fixture(root,'single',2); fixture(root,'lan',2.5); fixture(root,'single4',2.2)
+            fixture(root,'lan3',2.0,build='map')
+            text=summarize(root)
+            self.assertIn('사용률 0.70: WAF 감소율',text)
+            self.assertIn('[빌드 다름: 판정·주 비교에서 뺌',text)
+            self.assertIn('lan3_u0.70 (binary_sha256)',text)
+            self.assertIn('열린RU +2 칸 비용 (WAF_single4/WAF_single − 1): +10.0',text)
+            self.assertIn('[참고, 빌드 다름] lan3_u0.70',text)
+            self.assertIn('lan3 개선율 (1 − WAF_lan3/WAF_lan): +20.0',text)
+            self.assertIn('열린RU 수 동일(4) 배치 효과 (1 − WAF_lan3/WAF_single4): +9.0',text)
+            self.assertNotIn('다른 run이 섞임',text)
+
+    def test_build_and_host_difference_still_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp); fixture(root); fixture(root,'lan',1.5); fixture(root,'lan3',1.4,host='other-host',build='map')
+            text=summarize(root)
+            self.assertIn('다른 run이 섞임',text)
+            self.assertNotIn('사용률 0.70: WAF 감소율',text)
+
+    def test_same_build_variants_in_main_comparison(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            for pol,w in (('single',2),('lan',2.5),('single4',2.2),('lan3',2.0)): fixture(root,pol,w)
+            text=summarize(root)
+            self.assertNotIn('빌드 다름',text)
+            self.assertIn('  lan3 개선율 (1 − WAF_lan3/WAF_lan): +20.0',text)
+
+    def test_policy_names_match_config_and_run_names(self):
+        cfg=(Path(pilot.__file__).parent/'config.env').read_text()
+        line=[l for l in cfg.splitlines() if l.startswith('POLICY_NAMES=')][0]
+        self.assertEqual(tuple(line.split('"')[1].split()), pilot.POLICIES)
+        for pol in pilot.POLICIES:
+            self.assertEqual(pilot.RUN_RE.match(f'{pol}_u0.93').group(1), pol)
+            self.assertIn(f'NRUH_{pol}', runcheck.KEYS)
+
+    def test_variant_lines_formulas(self):
+        waf={('single',.93):8.0,('single4',.93):8.8,('lan',.93):8.6,('lan3',.93):7.9}
+        lines=pilot.variant_lines(waf,.93)
+        self.assertIn('열린RU +2 칸 비용 (WAF_single4/WAF_single − 1): +10.00%',lines)
+        self.assertIn('열린RU 수 동일(4) 배치 효과 (1 − WAF_lan3/WAF_single4): +10.23%',lines)
+        self.assertIn('lan3 개선율 (1 − WAF_lan3/WAF_lan): +8.14%',lines)
+        self.assertEqual(pilot.variant_lines(waf,.70),[])
+
+    def devcheck(self, policy, pid_map, placement):
+        envs={'NRUH_lan3':'4','PHS_lan3':'0:1:2','NRUH_single4':'4','PHS_single4':'0','EXPECT_RUHT':'II',
+              'RUH_METHOD':'femu','TORFS_PID_MAP_lan3':pid_map}
+        with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ,envs), \
+             patch.object(pilot,'read_ruh_types',return_value=[1,1,1,1]), \
+             patch.object(pilot,'read_placement',return_value=placement), \
+             patch.object(pilot,'read_femu_usage',return_value={'invalid_pid_cmds':0}), \
+             contextlib.redirect_stdout(io.StringIO()):
+            out=Path(tmp)/'device.txt'
+            try: pilot.cmd_devcheck(types.SimpleNamespace(policy=policy,out=str(out))); rc=0
+            except SystemExit as e: rc=e.code
+            return rc, out.read_text()
+
+    def test_devcheck_lan3_and_single4(self):
+        rc,text=self.devcheck('lan3','0,0,1,2,0',[(0,0),(1,1),(2,2)])
+        self.assertEqual(rc,0,text); self.assertIn('torfs_pid_map=0,0,1,2,0',text); self.assertIn('nruh=4',text)
+        rc,text=self.devcheck('single4','',[(0,0)])
+        self.assertEqual(rc,0,text)
+        rc,text=self.devcheck('lan3','0,0,1,3,0',[(0,0),(1,1),(2,2)])
+        self.assertEqual(rc,1); self.assertIn('TORFS_PID_MAP_lan3',text)
+        rc,text=self.devcheck('lan3','0,0,1,2,0',[(0,0),(1,1),(2,3)])
+        self.assertEqual(rc,1); self.assertIn('GC 전용 RUH 3',text)
 
     def test_no_current_config_fallback_for_old_gc(self):
         with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ,{'FEMU_BLKS_PER_PL':'211','FEMU_GC_THRES':'90'}):

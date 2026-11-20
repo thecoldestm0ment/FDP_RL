@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =====================================================================
 # 02_femu_run.sh — 지윤 담당. FEMU 게스트 안에서 실행.
-#   정책(single, lan, 대조 single6) x 사용률(TARGET_UTILS) 를 한 번씩 돌리고
+#   정책(single, lan, 대조 single6·single4, 변형 lan3) x 사용률(TARGET_UTILS) 를 한 번씩 돌리고
 #   장치 카운터(host/media 쓰기량)와 RUH별 상태를 SAMPLE_SEC 마다 기록.
 #
 #   sudo -E ./02_femu_run.sh                 전부 (single·lan x 모든 사용률)
@@ -12,7 +12,7 @@
 # 이 스크립트를 FRESH_FEMU=1 로 run 하나씩 호출.
 #
 # 주의: NG_DEV 장치 데이터 전부 삭제. FEMU 전용 장치에서만 실행.
-# 필요: ./00_build.sh femu, nvme-cli(fdp 지원), python3
+# 필요: ./00_build.sh femu (lan3는 femu-map 도), nvme-cli(fdp 지원), python3
 # =====================================================================
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -21,13 +21,30 @@ set -a; . "$HERE/config.env"; set +a
 . "$HERE/lib/dbbench_args.sh"
 . "$HERE/lib/runlib.sh"
 
-DB_BENCH="$WORK/bin/db_bench_torfs"
+DB_BENCH_DEFAULT="$WORK/bin/db_bench_torfs"     # single·lan·single6·single4 (기존 빌드 그대로)
+DB_BENCH_MAP="$WORK/bin/db_bench_torfs_map"      # TORFS_PID_MAP_<정책> 이 있는 정책 (lan3). ./00_build.sh femu-map
 TORFS_DB_DIR="${TORFS_DB_DIR:-$WORK/torfs_db}"   # TorFS가 쓰는 로컬 보조 폴더 (Lan도 이렇게 씀)
                                                  #   RocksDB LOG 도 여기 로컬 파일로 생김 (lib/runlib.sh 참고)
 FS_URI="torfs:xnvme:${NG_DEV}?be=io_uring_cmd"
-[[ -x "$DB_BENCH" ]] || { echo "먼저 ./00_build.sh femu 실행 필요."; exit 1; }
 
 POLICIES="${1:-single lan}"
+# 정책 이름·db_bench 를 run 시작 전에 전부 확인 (중간 run에서 멈추지 않게)
+policy_pid_map() { local v="TORFS_PID_MAP_$1"; echo "${!v:-}"; }
+for POL in $POLICIES; do
+  [[ " $POLICY_NAMES " == *" $POL "* ]] || { echo "정책 이름 이상: $POL (가능: $POLICY_NAMES)"; exit 1; }
+  if [[ -n "$(policy_pid_map "$POL")" ]]; then
+    [[ -x "$DB_BENCH_MAP" ]] || { echo "$POL 은 $DB_BENCH_MAP 필요. 먼저 ./00_build.sh femu-map"; exit 1; }
+  else
+    [[ -x "$DB_BENCH_DEFAULT" ]] || { echo "먼저 ./00_build.sh femu 실행 필요."; exit 1; }
+  fi
+done
+# 작은 시험용: PILOT_DB_BENCH=map 이면 모든 정책이 db_bench_torfs_map (매핑 없는 정책은 패치 중립 확인용). 본 run에는 안 씀
+case "${PILOT_DB_BENCH:-}" in
+  "") ;;
+  map) [[ -x "$DB_BENCH_MAP" ]] || { echo "PILOT_DB_BENCH=map 은 $DB_BENCH_MAP 필요. 먼저 ./00_build.sh femu-map"; exit 1; } ;;
+  *) echo "PILOT_DB_BENCH 값 이상: $PILOT_DB_BENCH (비우거나 map)"; exit 1 ;;
+esac
+DB_BENCH="$DB_BENCH_DEFAULT"
 UTILS="${2:-$TARGET_UTILS}"
 REP="${REP:-1}"
 SUFFIX=""; [[ "$REP" != "1" ]] && SUFFIX="_r$REP"
@@ -57,7 +74,8 @@ if [[ "$RUH_METHOD" == "femu" ]] && ! python3 "$HERE/pilot.py" usage >/dev/null;
   echo "FEMU 사용량 로그(C1h) 못 읽음. 이 브랜치(fdp-pilot) FEMU인지, NVME_DEV 확인."; exit 1
 fi
 # 정책별 장치 설정(RUH 수, II, placement handle 목록)은 run마다 아래 devcheck 로 확인.
-#   single 은 RUH 2개·handle 0, lan 은 RUH 6개·handle 0–4, single6 은 RUH 6개·handle 0 (config.env NRUH_*, PHS_*).
+#   single 은 RUH 2개·handle 0, lan 은 RUH 6개·handle 0–4, single6 은 RUH 6개·handle 0,
+#   single4 는 RUH 4개·handle 0, lan3 는 RUH 4개·handle 0–2 (config.env NRUH_*, PHS_*). GC 전용 = 마지막 RUH.
 #   정책마다 FEMU를 따로 띄움 -> 한 FEMU로는 그 정책 run만 (03_host_loop.sh).
 
 # 장치 읽기 3번까지 재시도 (한 번 실패로 30시간 run을 버리지 않게), 한 번에 60초 제한 (nvme가 멈춰도 영원히 대기 안 함)
@@ -116,8 +134,13 @@ for POL in $POLICIES; do
     python3 "$HERE/pilot.py" freshcheck > "$RUN/fresh-state.txt"
     rm -rf "$TORFS_DB_DIR"; mkdir -p "$TORFS_DB_DIR"
 
-    # 2) 정책
+    # 2) 정책: single* = 모든 파일 PID 0, lan = Lan 패치 hint 그대로 (PID 0–4),
+    #    lan3 = hint 결과를 TORFS_PID_MAP 으로 3묶음 (PID 0–2, db_bench_torfs_map)
     if [[ "$POL" == single* ]]; then export TORFS_FORCE_PID=0; else unset TORFS_FORCE_PID; fi
+    PID_MAP="$(policy_pid_map "$POL")"
+    if [[ -n "$PID_MAP" ]]; then export TORFS_PID_MAP="$PID_MAP"; DB_BENCH="$DB_BENCH_MAP"
+    else unset TORFS_PID_MAP; DB_BENCH="$DB_BENCH_DEFAULT"; fi
+    [[ "${PILOT_DB_BENCH:-}" == map ]] && DB_BENCH="$DB_BENCH_MAP"
 
     N=$(python3 "$HERE/pilot.py" get "$U" N)
     W=$(python3 "$HERE/pilot.py" get "$U" overwrite_writes_per_thread)
@@ -133,14 +156,15 @@ for POL in $POLICIES; do
     dbbench_common_args "$U"
     write_run_params "$RUN" \
       "script=02_femu_run.sh" "policy=$POL" "util=$U" "REP=$REP" "SCALE=1 (FEMU는 크기 줄이기 없음)" \
-      "TORFS_FORCE_PID=${TORFS_FORCE_PID:-unset}  (single·single6=0, lan=unset -> Lan 패치의 레벨별 hint)" \
+      "TORFS_FORCE_PID=${TORFS_FORCE_PID:-unset}  (single*=0, lan·lan3=unset -> Lan 패치의 레벨별 hint)" \
+      "TORFS_PID_MAP=${TORFS_PID_MAP:-unset}  (lan3: 기본 PID 0 WAL,1 L0–L3,2 L4,3 L5+,4 MANIFEST -> i번째 값)" \
       "N(--num)=$N" "W(--writes, 스레드당)=$W" \
       "overwrite 전체 연산 수 = W x THREADS = $((W * THREADS))" \
       "논리 데이터 대비 배수 = W x THREADS / N = $(python3 -c "print(f'{$W*$THREADS/$N:.4f}')")" \
       "logical_bytes = N x (KEY_SIZE + VALUE_SIZE) = $(( N * (KEY_SIZE + VALUE_SIZE) ))" \
       "TORFS_DB_DIR=$TORFS_DB_DIR" "FS_URI=$FS_URI" "RESULTS=$RESULTS" "db_bench=$DB_BENCH"
     { echo "policy=$POL util=$U N=$N W_per_thread=$W threads=$THREADS lba_bytes=$(cat "$RUN/lba_bytes")"
-      echo "TORFS_FORCE_PID=${TORFS_FORCE_PID:-unset} fs_uri=$FS_URI"
+      echo "TORFS_FORCE_PID=${TORFS_FORCE_PID:-unset} TORFS_PID_MAP=${TORFS_PID_MAP:-unset} db_bench=$DB_BENCH fs_uri=$FS_URI"
       echo "device:"; sed 's/^/  /' "$RUN/device.txt"
       echo "config:"; grep -v '^\s*#' "$HERE/config.env" | grep -v '^\s*$'
       echo "db_args:"; printf '  %s\n' "${DB_ARGS[@]}"; } > "$RUN/meta.txt"
@@ -187,7 +211,7 @@ for POL in $POLICIES; do
     if (( sampler_rc )); then echo "[계측] sampler 실패 ($sampler_rc)"; exit "$sampler_rc"; fi
     [[ "$(cat "$RUN/sampler.exit")" == 0 ]] || exit 71
     python3 "$HERE/pilot.py" phasetimes "$RUN" > "$RUN/time.txt" || true
-    unset TORFS_FORCE_PID
+    unset TORFS_FORCE_PID TORFS_PID_MAP
     # namespace에 없는 PID로 온 쓰기 = 장치가 handle 0 으로 보냄 -> 이 run 폐기.
     #   done 없이 멈춤 (호스트 03_host_loop.sh 도 여기서 멈춤).
     if ! python3 "$HERE/pilot.py" pidcheck > "$RUN/pid_check.txt"; then

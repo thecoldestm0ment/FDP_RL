@@ -77,6 +77,18 @@ class ValidationTests(unittest.TestCase):
         self.assertEqual(before,runcheck.comparison_key(self.m))
         self.m['config']['SAMPLE_SEC']='10'
         self.assertNotEqual(before,runcheck.comparison_key(self.m))
+    def test_comparison_ignores_policy_tables(self):
+        before=runcheck.comparison_key(self.m)
+        self.m['config'].update({'NRUH_lan3':'4','PHS_lan3':'0:1:2','TORFS_PID_MAP_lan3':'0,0,1,2,0','NRUH_single4':'4'})
+        self.assertEqual(before,runcheck.comparison_key(self.m))
+        self.assertNotEqual(runcheck.exp_config(self.m['config']),runcheck.exp_config({'SAMPLE_SEC':'30','UTIL_TOL':'.03'}))
+    def test_same_policy_config_checks_own_table_only(self):
+        old={'SAMPLE_SEC':'30','NRUH_lan':'6','PHS_lan':'0:1:2:3:4'}
+        new=dict(old, NRUH_lan3='4', PHS_lan3='0:1:2')
+        self.assertTrue(runcheck.same_policy_config(old,new,'lan'))
+        self.assertTrue(runcheck.same_policy_config(old,dict(new,NRUH_lan='5'),'single'))
+        self.assertFalse(runcheck.same_policy_config(old,dict(new,NRUH_lan='5'),'lan'))
+        self.assertFalse(runcheck.same_policy_config(old,dict(new,SAMPLE_SEC='10'),'lan'))
     def test_host_comparison(self):
         before=runcheck.comparison_key(self.m); self.m['host']['run_id']='second'
         self.assertEqual(before,runcheck.comparison_key(self.m));self.m['host']['hostname']='other'
