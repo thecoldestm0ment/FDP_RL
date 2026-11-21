@@ -1,0 +1,4 @@
+load LOG 원본 1129015811 B
+load LOG gzip 70721046 B
+overwrite LOG 원본 2756366563 B
+overwrite LOG gzip 174480631 B

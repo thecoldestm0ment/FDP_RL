@@ -1,0 +1,10 @@
+[femu] 새로 띄운 FEMU라 초기화 생략.
+policy=single
+nruh=2  (기대 2)
+ruh_types=0:II 1:II
+placement(pid->ruh)=0->0
+invalid_pid_cmds_at_start=0
+check=OK
+[옵션] load: 결과: 통과 28 / 불일치 0 / 누락 0
+[옵션] overwrite: 결과: 통과 28 / 불일치 0 / 누락 0
+[femu] 완료: /home/femu/fdp_pilot_work/results/single_u0.70
