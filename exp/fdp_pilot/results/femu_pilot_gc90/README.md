@@ -4,6 +4,8 @@
 - 판정은 **한 컴퓨터 안의 run끼리만** (`pilot.py summary` 가 컴퓨터·QEMU·빌드·실험 설정이 다른 run을 섞으면 판정 거부)
 - 폴더
   - `ingu/`: user2 PC (본 실험). 70% single·lan·single6, 93% single·lan·single6
+    - 93% lan3: 끝 (VALID, 11/22). 아직 브랜치 `femu-pilot-gc90-lan3-93` (938243a0)에만 있음, 이 폴더·`ingu/summary.txt` 에는 없음
+    - 93% single4: 진행 중. 끝나면 lan3 브랜치 병합과 `ingu/summary.txt` 재생성
   - `lab/`: 연구실 서버 (재현). 93% single·lan·single6 (11/18–20, 하나씩), 85%·70% single·lan·single6 (11/20–21, 사용률마다 세 run 동시)
     - 93% 두 번째 묶음 (11/22, 다섯 run 동시): `single_u0.93_r2`·`lan_u0.93_r2`·`single6_u0.93_r2` (반복) + `single4_u0.93`·`lan3_u0.93` (새 정책)
     - `summary.txt` = 폴더 전체, `summary_r2batch.txt` = 두 번째 묶음 다섯 run만 (링크 폴더로 따로 실행)
@@ -66,7 +68,7 @@ exec sudo -A FEMU_MBE_FILE="$FEMU_MBE_FILE" $HOME/FDP_RL/build-femu/qemu-system-
 - 컴퓨터별로 따로: `python3 exp/fdp_pilot/pilot.py summary <컴퓨터 원본 결과 폴더>` (전체 LOG 필요)
 - 숫자가 같을 필요는 없음. 방향이 같은지 봄
 
-| 볼 것 (93%, 뒤 1/3 WAF 기준) | user2 PC | 연구실 서버 |
+| 볼 것 (93%, 뒤 1/3 WAF 기준) | user2 PC | 연구실 서버 (첫 묶음, 하나씩) |
 |---|---|---|
 | WAF single / lan / single6 | 8.126 / 8.622 / 9.667 | 7.733 / 8.180 / 9.236 |
 | lan vs single (WAF 감소율) | −6.10% (lan이 더 씀) | −5.78% (lan이 더 씀) |
@@ -74,7 +76,7 @@ exec sudo -A FEMU_MBE_FILE="$FEMU_MBE_FILE" $HOME/FDP_RL/build-femu/qemu-system-
 | 배치 효과 (single6 → lan, WAF 감소율) | +10.81% | +11.43% |
 | 순서 | single < lan < single6 | 같음 |
 
-| 참고 (single / lan / single6) | user2 PC | 연구실 서버 |
+| 참고 (single / lan / single6) | user2 PC | 연구실 서버 (첫 묶음) |
 |---|---|---|
 | run 전체 WAF | 6.940 / 7.362 / 8.282 | 6.356 / 6.678 / 7.481 |
 | 가운데→뒤 1/3 WAF 변화 (뒤 대비) | 8.3 / 8.6 / 9.0% | 7.2 / 7.0 / 7.6% |
@@ -86,13 +88,16 @@ exec sudo -A FEMU_MBE_FILE="$FEMU_MBE_FILE" $HOME/FDP_RL/build-femu/qemu-system-
 - 절대 WAF는 서버가 약 5% 낮음 (세 run 모두). 원인 미확인. 차이 나는 것: 메타데이터 정리 횟수·시점, run 속도
 - 두 컴퓨터 모두 가운데→뒤 1/3 WAF 변화 > 5% (아직 변하는 중)
 - 70% 관문: user2 PC gain +8.85% (< 10%) → 규칙상 판정 보류, 93%는 관찰용 (`ingu/summary.txt`)
-- 서버: gain 70% +10.10% (관문 통과), gain93/gain70 = −0.572 → "고사용률에서 WAF 이득 감소 관찰" (`lab/summary.txt`)
+- 서버: gain 70% +10.10% (관문 통과), gain93/gain70 = **−0.547** (두 묶음 평균, `lab/summary.txt`) → "고사용률에서 WAF 이득 감소 관찰"
+  - `lab/summary.txt` 는 93% 두 묶음(`_u0.93`, `_u0.93_r2`)을 합쳐 계산: 93% gain −5.53%, 열린 RU 비용 +18.56%, 배치 효과 +10.99%
+  - 묶음별: 첫 묶음만 (하나씩) −5.78 / +19.43 / +11.43%, 비율 −0.572. 둘째 묶음만 (다섯 run 동시, `summary_r2batch.txt`) −5.28 / +17.68 / +10.54%, 비율 −5.28 / 10.10 = −0.523 [계산]
+  - 셋 다 0.5 아래라 판정 문구는 같음
   - **두 컴퓨터 판정이 다름**: 70% gain이 관문(10%) 바로 근처(8.85 / 10.10%)라 갈림. 기준은 결과 보고 안 바꿈
-  - 서버 판정 안의 조건 차이: 70%·85%는 세 run 동시, 93%는 하나씩
+  - 서버 판정 안의 조건 차이: 70%·85%는 세 run 동시, 93%는 첫 묶음 하나씩 + 둘째 묶음 다섯 run 동시
 
 ### 사용률별 (뒤 1/3 WAF)
 
-| | 70% user2 PC | 70% 서버 | 85% 서버 | 93% 서버 | 93% user2 PC |
+| | 70% user2 PC | 70% 서버 | 85% 서버 | 93% 서버 (첫 묶음) | 93% user2 PC |
 |---|---|---|---|---|---|
 | WAF single / lan / single6 | 2.773 / 2.527 / 2.908 | 2.669 / 2.400 / 2.780 | 4.482 / 4.606 / 4.968 | 7.733 / 8.180 / 9.236 | 8.126 / 8.622 / 9.667 |
 | lan vs single (WAF 감소율) | +8.85% | +10.10% | −2.77% | −5.78% | −6.10% |
@@ -103,12 +108,15 @@ exec sudo -A FEMU_MBE_FILE="$FEMU_MBE_FILE" $HOME/FDP_RL/build-femu/qemu-system-
 
 - 70% single6: user2 PC (`ingu/single6_u0.70`, PR #6)
 - 85% 예측 (11/20, 결과 전, Obsidian 기록): lan vs single 약 0% ±3%, 열린 RU 비용 약 +12%, 배치 효과 +11~13%
-  - lan vs single −2.77%, 열린 RU 비용 +10.84% → 예측 범위 안
+  - lan vs single −2.77% → 예측 범위(±3%) 안
+  - 열린 RU 비용 +10.84% → 예측은 범위가 아니라 한 점(약 +12%). 가까움
   - 배치 효과 +7.28% → 예측보다 낮음
 - 열린 RU 비용 ≈ 0.78 × 4 / 여유 RU(single) 식 하나로 세 사용률이 맞음: 70% 식 +5.3 (실측 +4.9), 85% 식 +10.1 (실측 +10.8), 93% 계수 맞춘 점 [계산]
 - 서버 70% 예측 (11/21, 결과 전): 열린 RU 비용 +5.3%, 배치 효과 +12~14%, lan vs single +8~10% → 실측 +4.15 / +13.68 / +10.10%
+  - lan vs single +10.10% 는 예측 범위(+8~10%) 바로 밖
   - 배치 효과가 같은 컴퓨터에서도 85%만 낮음 (13.7 → 7.3 → 11.4%) → 85%는 희석 (아래 분해)
-- 뒤집히는 지점: 70%와 85% 사이 (서버 한 컴퓨터 안에서 확인)
+- 뒤집히는 지점: 70%와 85% 사이 (서버 한 컴퓨터 안에서 확인). 서버 +10.10% (실제 69.2%) → −2.77% (실제 83.7%), 직선으로 0이 되는 곳 약 80.6% [계산]
+- `lab/summary.txt` 의 "사용률 0.93" 줄은 두 묶음을 합친 값 (−5.53 / +18.56 / +10.99%). 위 표 93% 서버 칸은 첫 묶음만
 
 ### 93% 두 번째 묶음 (서버, 11/22, 다섯 run 동시)
 
@@ -150,13 +158,20 @@ exec sudo -A FEMU_MBE_FILE="$FEMU_MBE_FILE" $HOME/FDP_RL/build-femu/qemu-system-
 | lan3 개선율 (1 − lan3 / lan) | **+6.66%** |
 | lan3 vs single (1 − lan3 / single) | **+1.73%** |
 
+- 위 값은 `summary_r2batch.txt` (같은 조건, 다섯 run 동시) 기준이고 이것을 주 값으로 씀. `lab/summary.txt` (폴더 전체)는 93% single·lan 기준값을 두 묶음 평균으로 잡아서 single4 칸 비용 +7.36%, lan3 vs lan +7.07%, lan3 vs single +1.93%로 조금 다름 (3그룹 배치 효과 +8.65%는 같음)
 - 열린 RU 비용: RU 1개당 +3.8% (2개) / +4.4% (4개). 거의 비례, 약간 볼록 [계산]
 - lan3: 칸 비용(+7.6%)이 배치 효과(+8.7%)보다 조금 작아 single을 근소하게 이김
 - 사전 예측 (11/20, 결과 전, Obsidian 03 문서. 서버 첫 묶음 값 기준)
   - single4 +8 ~ +10% → +7.58% (범위 바로 아래)
-  - lan3 vs lan −8 ~ −9% (넓게 −5%까지) → −6.66% (넓은 범위 안)
+  - lan3 vs lan −8 ~ −9% (넓게 −5%까지) → −6.66% (넓은 범위 안, 핵심 범위 밖)
   - lan3 vs single −2 ~ −4% → −1.73% (범위 바로 아래)
   - 판정 기준: 개선율 ≥ 5% → "그룹을 줄이면 회복됨"
+- user2 PC 93% lan3 (11/22 끝, 브랜치 `femu-pilot-gc90-lan3-93` 에만 있음, summary 재생성 전)
+  - VALID, `db_bench_torfs_map`, `TORFS_PID_MAP=0,0,1,2,0`, RUH별 host 60.7 / 25.4 / 13.8 / 0%, `invalid_pid_cmds=0`
+  - 뒤 1/3 WAF 8.0606 (run 전체 6.4499, 가운데 1/3 7.3650). `pilot.py` 의 `phase_delta`·`phase_slice` 로 계산 (같은 방법으로 user2 PC lan 8.6217·single 8.1262 재현) [계산]
+  - lan 대비 개선율 1 − 8.0606 / 8.6217 = **+6.51%** (≥ 5% → 기준 통과), single 대비 +0.81% [계산]
+  - 사전 예측 (user2 PC lan3 7.83 ~ 7.94, 넓게 ~ 8.19) → 8.061: 넓은 범위 안, 핵심 범위 밖
+  - single4 진행 중 → user2 PC 칸 비용(열린 RU +2)·3그룹 배치 효과는 아직 없음
 - 70% 관문 규칙상 93% 결과는 관찰용 (서버는 관문 통과, user2 PC는 보류)
 
 ## GC 복사 분해 (`gc_decay.py`)

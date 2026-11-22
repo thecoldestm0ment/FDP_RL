@@ -4,19 +4,21 @@
 줄어들면 → 방향 A (무너짐 원인 연구).
 
 > **11/13 고정:** 70%·93%·모든 정책을 **한 컴퓨터 안에서** 돌리고 판정도 그 컴퓨터 결과로만 함. 11/26 전 새 정책·설정 추가 없음 (버그 수정만). 70% single6·REP=2·새 workload는 후속연구 (lan3는 11/20 예외로 진행, 아래 줄).
-> **11/20 예외:** 서버 85% 묶음, 93% **lan3·single4** 추가 (아래 "추가 정책 (11/20)"). 70% lan3·70% single6·REP=2는 계속 미룸.
+> **11/20 예외:** 서버 85% 묶음, 93% **lan3·single4** 추가 (아래 "추가 정책 (11/20)"). ~~70% lan3·70% single6·REP=2는 계속 미룸.~~ → 11/23 정정: 70% single6은 두 컴퓨터 모두 돌림. REP=2 대신 서버 93%를 두 번째 묶음(11/22, 다섯 run 동시)으로 한 번 더 돌림. 70% lan3·새 workload는 계속 미룸.
+>
+> **11/23 현재:** 서버(`lab/`) 70·85·93% single·lan·single6, 93% 두 번째 묶음(single·lan·single6 반복 `_r2` + single4·lan3) 끝. user2 PC(`ingu/`) 70·93% single·lan·single6 끝, 93% lan3 끝 (브랜치 `femu-pilot-gc90-lan3-93`, 아직 병합 안 함), 93% single4 진행 중. **결과·결론은 `results/femu_pilot_gc90/README.md`**.
 
 ## 한눈에
 
 | 항목 | 값 |
 |---|---|
-| 정책 | **single** (전부 PID 0) · **lan** (WAL 0 / L0–L3 1 / L4 2 / L5+ 3 / MANIFEST 4) · 대조 **single6** (single 배치, 열린 RU는 lan과 같게, 93%에서 시간 남으면) · (11/20) 대조 **single4**, 우리 변형 **lan3** |
-| 사용률 | 70%, 93% (삭제 대기 파일 포함 최대 사용량 ÷ 사용자 용량) |
+| 정책 | **single** (전부 PID 0) · **lan** (WAL 0 / L0–L3 1 / L4 2 / L5+ 3 / MANIFEST 4) · 대조 **single6** (single 배치, 열린 RU는 lan과 같게. 처음엔 93%에서 시간 남으면 → 실제로는 모든 사용률에서 돌림) · (11/20) 대조 **single4**, 우리 변형 **lan3** |
+| 사용률 | 70%, 93% (삭제 대기 파일 포함 최대 사용량 ÷ 사용자 용량). 서버는 85%도 (11/20 추가, 판정 식에는 안 들어감, 뒤집히는 지점 관찰용) |
 | workload | load(`filluniquerandom`, 키 N개) → overwrite(균등 랜덤, 데이터 **2배**) |
 | 장치 | FEMU bbssd, 모든 RUH II, RU 128 MiB × 211 (OP 9.9%), 사용자 24 GiB, **GC 90/99** (WARP §4.3 GC 시작 기준 참고). RUH: single 2 · lan 6 · single6 6 · single4 4 · lan3 4 (GC 전용 = 마지막 RUH) |
 | 측정 | overwrite 구간 WAF (media ÷ host), RUH별 쓰기, 실제 사용률, 여유 RU 추정, 가운데·뒤 1/3 WAF 차 (안정 확인) |
 | 공간 | (PC 보정 식 1.0134 × 논리 + 3.047 GiB) × 1.02 + TorFS 메타 2 GiB = 목표 × 24 GiB → 논리 70% 11.3 GiB, 93% 16.6 GiB |
-| 반복 | 1번 (추가 반복은 후속연구) |
+| 반복 | 1번. 예외: 서버 93% single·lan·single6은 두 번째 묶음(11/22, 다섯 run 동시)으로 한 번 더 (`*_u0.93_r2`) |
 | 순서 | 같은 컴퓨터에서 **70% single → lan** → gain ≥ 10%면 **93% single → lan** → 시간 남으면 93% single6 |
 | 초기화 | run마다 호스트가 FEMU 재시작 (`03_host_loop.sh` → `femu/start_femu.sh`) |
 
@@ -80,7 +82,8 @@ gain = 1 − WAF_lan / WAF_single (overwrite 뒤 1/3)
 | 8 | 지윤 | 장치 확인 (정책별) | 아래 "처음 띄웠을 때 확인" |
 | 9 | 실행 담당 | 작은 시험 한 바퀴 | `HOST_RESULTS=~/fdp_smoke_gc90 FORCE=1 OVERWRITE_MULT=0.2 ./03_host_loop.sh lan 0.35` |
 | 10 | 실행 담당 | 70% 두 run → summary 확인 → (gain ≥ 10%) 93% 두 run → (시간 남으면) 93% single6 | `HOST_RESULTS=~/fdp_pilot_results_gc90 ./03_host_loop.sh "single lan" 0.70` → `… "single lan" 0.93` → `… single6 0.93` |
-| 11 | 같이 | 해석 | `$HOST_RESULTS/summary.txt` |
+| 10a | 실행 담당 | (11/20 추가) 93% lan3·single4. lan3는 게스트에 `db_bench_torfs_map` 빌드 필요 (6번) | `… "lan3 single4" 0.93` (같은 93% 결과 폴더) |
+| 11 | 같이 | 해석 | `$HOST_RESULTS/summary.txt` → 정리는 `results/femu_pilot_gc90/README.md` |
 
 - 게스트·호스트 `config.env`는 같은 파일 (같은 브랜치를 양쪽에 받기)
 - 9번: FEMU run은 `SCALE` 없음 → 낮은 사용률(35%, 논리 3.2 GiB) + 짧은 덮어쓰기로 대신. 메타 2 GiB 몫 때문에 30% 아래는 데이터가 거의 안 들어감. 결과 폴더 분리 필수
@@ -334,7 +337,7 @@ gain −12.2% → 보류. 시계열로 본 원인:
 - 진짜 FEMU 게스트 + db_bench + TorFS: GC 75/95 예비 run 70% 두 개 (인구 PC)
 - 실행·검증 스크립트 단위 시험 30개 (`test_runcheck.py`, `test_analysis.py`, `test_runner.py`, `test_build.py`): sampler 실패 전파, UUID 불일치 거부, 빌드 검사, 시간 기준 뒤 1/3, 검증 규칙, 컴퓨터 섞임 거부
   - `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest test_runcheck test_analysis test_runner test_build`
-- **안 함**: GC 90/99로 진짜 run
+- ~~**안 함**: GC 90/99로 진짜 run~~ → 11/23: 두 컴퓨터에서 진짜 run 끝 (결과 `results/femu_pilot_gc90/`, 정리는 그 폴더 README)
 
 **한계** — run 1번, 균등 랜덤 → 숫자를 논문에 쓰면 안 됨. "FEMU에서도 무너짐이 보이는가"만 판단
 
@@ -346,15 +349,21 @@ gain −12.2% → 보류. 시계열로 본 원인:
 │                       fresh-state.txt, manifest.json, validation.json, lba_bytes, meta.txt, run_params.txt,
 │                       options_check_*.txt, db_bench_*, rocksdb_LOG_*.gz, done
 ├── lan_u0.70/
+├── single6_u0.70/
 ├── single_u0.93/
 ├── lan_u0.93/
-├── single6_u0.93/      (시간 남으면)
+├── single6_u0.93/
+├── single4_u0.93/      (11/20 추가, 대조)
+├── lan3_u0.93/         (11/20 추가, db_bench_torfs_map)
+├── *_u0.85/            (서버만, 11/20 추가)
+├── *_u0.93_r2/         (서버만, 93% 두 번째 묶음 반복)
 ├── attempts/           실패·중단된 시도 (지우지 않음)
 ├── host_logs/          femu_<run>_<uuid>.log (실제 FEMU 명령 포함), host_<run>_<uuid>.json, run_<run>_<uuid>.log
 └── summary.txt         WAF 표, 안정 확인, 판정
 
 저장소: results/pc_calib_v3_1x/ (인구 PC 보정), results/femu_pilot/ (GC 75/95 예비 run, 판정에 안 씀)
         새 run은 results/femu_pilot_gc90/<컴퓨터>/ 같은 새 폴더로. host_logs·manifest·.build.json까지 통째로
+        GC 90/99 결과·결론: results/femu_pilot_gc90/README.md
 ```
 
 ## 출처
