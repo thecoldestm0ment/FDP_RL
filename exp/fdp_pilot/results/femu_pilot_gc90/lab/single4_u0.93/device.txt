@@ -1,0 +1,7 @@
+policy=single4
+nruh=4  (기대 4)
+ruh_types=0:II 1:II 2:II 3:II
+placement(pid->ruh)=0->0
+torfs_pid_map=-
+invalid_pid_cmds_at_start=0
+check=OK
