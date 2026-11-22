@@ -6,6 +6,7 @@
     예: python3 gc_decay.py lab 0.93
         python3 gc_decay.py ingu 0.93 lan lan3      (lan3 0번 칸 vs lan L0–L3 칸 비교)
         python3 gc_decay.py ingu 0.93 single4 lan3  (열린 RU 4개 조건의 배치 효과)
+        python3 gc_decay.py lab 0.93 lan lan5       (MANIFEST 칸 제거)
   위치: results 아래 → runcheck 스크립트 해시에서 빠짐 (run 검증·호스트/게스트 대조에 영향 없음)
 
 출력 (A = 정책A, B = 정책B)
@@ -30,9 +31,10 @@ from collections import defaultdict
 GiB = 1 << 30
 # 정책별 데이터 칸 이름 (없는 정책 = 칸 하나 "데이터")
 NAMES = {"lan": {0: "WAL", 1: "L0–L3", 2: "L4", 3: "L5+", 4: "MANIFEST"},
-         "lan3": {0: "WAL·MANIFEST·L0–L3", 1: "L4", 2: "L5+"}}
+         "lan3": {0: "WAL·MANIFEST·L0–L3", 1: "L4", 2: "L5+"},
+         "lan5": {0: "WAL·MANIFEST", 1: "L0–L3", 2: "L4", 3: "L5+"}}
 # 2)에서 볼 칸 (lan은 WAL·MANIFEST 빼고 SST 칸만)
-LEVEL_RUHS = {"lan": (1, 2, 3), "lan3": (0, 1, 2)}
+LEVEL_RUHS = {"lan": (1, 2, 3), "lan3": (0, 1, 2), "lan5": (1, 2, 3)}
 # lan3 0번 칸 = lan 0·1·4번 칸 (WAL·L0–L3·MANIFEST). lan과 lan3를 비교할 때 lan 쪽에 합친 값도 냄
 LAN3_RUH0_IN_LAN = (0, 1, 4)
 

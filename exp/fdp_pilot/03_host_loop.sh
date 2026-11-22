@@ -4,7 +4,7 @@
 #   run마다 FEMU를 새로 띄우고, 게스트 UUID가 이 run의 UUID인지 확인한 뒤에만 실행
 #   한 컴퓨터 안에서: ./03_host_loop.sh "single lan" 0.70 → summary 확인 → ./03_host_loop.sh "single lan" 0.93
 #   (시간 남으면) ./03_host_loop.sh single6 0.93
-#   추가 정책: ./03_host_loop.sh "single4 lan3" 0.93  (lan3는 게스트에서 ./00_build.sh femu-map 먼저)
+#   추가 정책: ./03_host_loop.sh "single4 lan3 lan5" 0.93  (lan3·lan5는 게스트에서 ./00_build.sh femu-map 먼저)
 #   패치 중립 작은 시험: PILOT_DB_BENCH=map HOST_RESULTS=~/fdp_smoke_map FORCE=1 OVERWRITE_MULT=0.2 ./03_host_loop.sh lan 0.35
 #   작은 시험: HOST_RESULTS=~/fdp_smoke_gc90 FORCE=1 OVERWRITE_MULT=0.2 ./03_host_loop.sh lan 0.35
 #   준비: README "호스트 준비". 게스트 sudo NOPASSWD, 호스트·게스트 스크립트·config.env 동일

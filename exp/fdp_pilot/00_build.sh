@@ -4,7 +4,7 @@
 #
 #   ./00_build.sh pc     인구: PC용 (TorFS 없음, 일반 파일시스템)
 #   ./00_build.sh femu   지윤: FEMU 게스트용 (TorFS + Single PID 패치)
-#   ./00_build.sh femu-map  lan3용: TorFS + Single PID + PID 매핑(TORFS_PID_MAP) 패치. 트리·바이너리 따로
+#   ./00_build.sh femu-map  lan3·lan5용: TorFS + Single PID + PID 매핑(TORFS_PID_MAP) 패치. 트리·바이너리 따로
 #                           (femu 바이너리·build.json 은 안 건드림 → 기존 run과 같은 빌드 유지)
 #
 # 결과: $WORK/bin/db_bench_pc, db_bench_torfs, db_bench_torfs_map

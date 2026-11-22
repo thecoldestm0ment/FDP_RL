@@ -1232,8 +1232,8 @@ def ruh_shares(path, ru_blocks):
     return {p: acc[p] / tot for p in sorted(acc)} if tot else None
 
 
-POLICIES = ("single", "lan", "single6", "single4", "lan3")   # config.env POLICY_NAMES 와 같아야 함 (test)
-RUN_RE = re.compile(r"^(single6|single4|single|lan3|lan)_u([\d.]+)(?:_r(\d+))?$")
+POLICIES = ("single", "lan", "single6", "single4", "lan3", "lan5")   # config.env POLICY_NAMES 와 같아야 함 (test)
+RUN_RE = re.compile(r"^(single6|single4|single|lan3|lan5|lan)_u([\d.]+)(?:_r(\d+))?$")
 
 GC_LOG_RE = re.compile(r"gc threshold(_high)? \((\d+)%\) (\d+)/(\d+) RU")
 
@@ -1324,7 +1324,7 @@ def format_diff(d):
 
 
 def pid_mapped(r):
-    """PID 매핑 정책 run인지 (run config에 TORFS_PID_MAP_<정책> 값이 있음, 지금은 lan3)."""
+    """PID 매핑 정책 run인지 (run config에 TORFS_PID_MAP_<정책> 값이 있음, 지금은 lan3·lan5)."""
     return bool(r["config"].get(f"TORFS_PID_MAP_{r['policy']}"))
 
 
@@ -1334,11 +1334,14 @@ def policy_table(r):
 
 
 def variant_lines(waf, u, only=None):
-    """single4·lan3 분해 (03 lan3 계획의 식). waf = {(정책, 사용률): 뒤 1/3 WAF}. only면 그 정책이 들어간 줄만."""
+    """single4·lan3·lan5 분해 (03 lan3 계획의 식). waf = {(정책, 사용률): 뒤 1/3 WAF}. only면 그 정책이 들어간 줄만."""
     rows = [("single4", "single", "열린RU +2 칸 비용 (WAF_single4/WAF_single − 1)", False),
             ("lan3", "single4", "열린RU 수 동일(4) 배치 효과 (1 − WAF_lan3/WAF_single4)", True),
             ("lan3", "lan", "lan3 개선율 (1 − WAF_lan3/WAF_lan)", True),
-            ("lan3", "single", "lan3 vs single WAF 감소율 (1 − WAF_lan3/WAF_single)", True)]
+            ("lan3", "single", "lan3 vs single WAF 감소율 (1 − WAF_lan3/WAF_single)", True),
+            ("lan5", "lan", "MANIFEST 칸 제거 효과 (1 − WAF_lan5/WAF_lan)", True),
+            ("lan3", "lan5", "WAL 칸 합침 효과 (1 − WAF_lan3/WAF_lan5)", True),
+            ("lan5", "single", "lan5 vs single WAF 감소율 (1 − WAF_lan5/WAF_single)", True)]
     out = []
     for x, base, label, reduction in rows:
         if only and only not in (x, base):
@@ -1484,9 +1487,13 @@ def cmd_summary(a):
             print(f"  열린RU 수 동일 조건의 배치 WAF 감소율: {(1-waf[('lan', u)]/waf[('single6', u)])*100:+.2f}%")
         for line in variant_lines(waf, u):
             print("  " + line)
+    ref = {}   # 참고 run끼리 비교 (lan3 vs lan5 등): 다른 참고 정책은 정책·사용률별 평균
+    for o in others:
+        ref.setdefault((o["policy"], o["util"]), []).append(o["waf_tail"])
+    ref = {k: sum(v) / len(v) for k, v in ref.items()}
     for r in others:
-        # 참고 run마다 자기 WAF로 계산 (기준 묶음에 같은 정책·사용률이 있어도 덮어씀)
-        lines = variant_lines(waf | {(r["policy"], r["util"]): r["waf_tail"]}, r["util"], only=r["policy"])
+        # 참고 run마다 자기 WAF로 계산 (기준 묶음·다른 참고 run에 같은 정책·사용률이 있어도 덮어씀)
+        lines = variant_lines(waf | ref | {(r["policy"], r["util"]): r["waf_tail"]}, r["util"], only=r["policy"])
         if lines:
             print(f"[참고, 빌드 다름] {r['run']} (WAF 뒤1/3 {r['waf_tail']:.4f}):")
             for line in lines:

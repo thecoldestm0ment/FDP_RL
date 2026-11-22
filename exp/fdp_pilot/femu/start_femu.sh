@@ -7,6 +7,7 @@
 #     single6: RUH 6개 (0 데이터, 1–4 빈 채로 열림, 5 GC), handle 0  — 열린 RU 비용 대조용
 #     single4: RUH 4개 (0 데이터, 1–2 빈 채로 열림, 3 GC), handle 0  — 열린 RU 비용 대조용
 #     lan3   : RUH 4개 (0–2 데이터, 3 GC), handle 0–2  — 우리 변형 (PID 매핑은 게스트 TorFS)
+#     lan5   : RUH 5개 (0–3 데이터, 4 GC), handle 0–3  — 우리 변형 (lan에서 MANIFEST 칸 제거, PID 매핑)
 #   GC 전용 RUH = 마지막 (RUH 수 − 1)
 #   03_host_loop.sh 가 run마다 호출. 손으로: PILOT_POLICY=lan ./femu/start_femu.sh
 #   끄기: 게스트에서 sudo poweroff (또는 QMP quit)

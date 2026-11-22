@@ -22,7 +22,7 @@ def fixture(root, policy='single', waf=2, host='same-host', util=.70, build='sam
     d.mkdir()
     # 실제 manifest처럼 모든 run config에 lan3 매핑 값이 들어 있음 (자기 정책 것만 의미 있음)
     cfg = {'SAMPLE_SEC':'30', 'MAX_SAMPLE_GAP_FACTOR':'3', 'UTIL_TOL':'.03', 'STABLE_TOL':'.05',
-           'TORFS_PID_MAP_lan3':'0,0,1,2,0'} | (cfg_extra or {})
+           'TORFS_PID_MAP_lan3':'0,0,1,2,0', 'TORFS_PID_MAP_lan5':'0,1,2,3,0'} | (cfg_extra or {})
     m = {'schema':1, 'N':10, 'expected_writes':20, 'policy':policy, 'util':util,
          'config':cfg, 'source':{'commit':'fixed'}, 'build':{'binary_sha256':build},
          'kernel':'same', 'nvme':'same', 'host':{'hostname':host, 'qemu_sha256':'same'}}
@@ -154,6 +154,20 @@ class AnalysisRegression(unittest.TestCase):
             self.assertIn('열린RU 수 동일(4) 배치 효과 (1 − WAF_lan3/WAF_single4): +9.0',text)
             self.assertNotIn('다른 run이 섞임',text)
 
+    def test_lan5_reference_lines_include_lan3_vs_lan5(self):
+        """lan3·lan5 둘 다 참고 run (매핑 바이너리) → lan5 줄과 lan3 vs lan5 줄이 참고 run끼리 계산됨."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            fixture(root,'single',2); fixture(root,'lan',2.5)
+            fixture(root,'lan3',2.0,build='map'); fixture(root,'lan5',2.25,build='map')
+            text=summarize(root)
+            self.assertIn('사용률 0.70: WAF 감소율',text)
+            self.assertIn('[참고, 빌드 다름] lan5_u0.70',text)
+            self.assertIn('MANIFEST 칸 제거 효과 (1 − WAF_lan5/WAF_lan): +10.0',text)
+            self.assertIn('WAL 칸 합침 효과 (1 − WAF_lan3/WAF_lan5): +11.1',text)
+            self.assertIn('lan5 vs single WAF 감소율 (1 − WAF_lan5/WAF_single): -12.5',text)
+            self.assertNotIn('다른 run이 섞임',text)
+
     def test_plain_policy_build_change_refused(self):
         """(a) single·lan 70% 빌드 A + 93% 빌드 B → 예전처럼 판정 보류 (93% 짝이 빠져 관문 통과로 가면 안 됨)."""
         with tempfile.TemporaryDirectory() as tmp:
@@ -238,12 +252,17 @@ class AnalysisRegression(unittest.TestCase):
         self.assertIn('열린RU 수 동일(4) 배치 효과 (1 − WAF_lan3/WAF_single4): +10.23%',lines)
         self.assertIn('lan3 개선율 (1 − WAF_lan3/WAF_lan): +8.14%',lines)
         self.assertEqual(pilot.variant_lines(waf,.70),[])
+        lines=pilot.variant_lines(waf|{('lan5',.93):8.2},.93,only='lan5')
+        self.assertEqual(lines,['MANIFEST 칸 제거 효과 (1 − WAF_lan5/WAF_lan): +4.65%',
+                                'WAL 칸 합침 효과 (1 − WAF_lan3/WAF_lan5): +3.66%',
+                                'lan5 vs single WAF 감소율 (1 − WAF_lan5/WAF_single): -2.50%'])
 
-    def devcheck(self, policy, pid_map, placement):
+    def devcheck(self, policy, pid_map, placement, nruh=4):
         envs={'NRUH_lan3':'4','PHS_lan3':'0:1:2','NRUH_single4':'4','PHS_single4':'0','EXPECT_RUHT':'II',
-              'RUH_METHOD':'femu','TORFS_PID_MAP_lan3':pid_map}
+              'NRUH_lan5':'5','PHS_lan5':'0:1:2:3','RUH_METHOD':'femu','TORFS_PID_MAP_lan3':'0,0,1,2,0',
+              f'TORFS_PID_MAP_{policy}':pid_map}
         with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ,envs), \
-             patch.object(pilot,'read_ruh_types',return_value=[1,1,1,1]), \
+             patch.object(pilot,'read_ruh_types',return_value=[1]*nruh), \
              patch.object(pilot,'read_placement',return_value=placement), \
              patch.object(pilot,'read_femu_usage',return_value={'invalid_pid_cmds':0}), \
              contextlib.redirect_stdout(io.StringIO()):
@@ -264,6 +283,14 @@ class AnalysisRegression(unittest.TestCase):
         for bad,msg in (('0,0,1','숫자 5개'),('0,a,1,2,0','숫자 5개'),('0,0,1,1,0','안 쓰는 handle')):
             rc,text=self.devcheck('lan3',bad,[(0,0),(1,1),(2,2)])
             self.assertEqual(rc,1,bad); self.assertIn(msg,text)
+
+    def test_devcheck_lan5(self):
+        rc,text=self.devcheck('lan5','0,1,2,3,0',[(0,0),(1,1),(2,2),(3,3)],nruh=5)
+        self.assertEqual(rc,0,text); self.assertIn('torfs_pid_map=0,1,2,3,0',text); self.assertIn('nruh=5',text)
+        rc,text=self.devcheck('lan5','0,1,2,4,0',[(0,0),(1,1),(2,2),(3,3)],nruh=5)
+        self.assertEqual(rc,1); self.assertIn('TORFS_PID_MAP_lan5',text)
+        rc,text=self.devcheck('lan5','0,0,1,2,0',[(0,0),(1,1),(2,2),(3,3)],nruh=5)
+        self.assertEqual(rc,1); self.assertIn('안 쓰는 handle',text)
 
     def test_no_current_config_fallback_for_old_gc(self):
         with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ,{'FEMU_BLKS_PER_PL':'211','FEMU_GC_THRES':'90'}):
