@@ -7,6 +7,13 @@ lan3_u0.70: VALID; host 551.124 GiB; total Media 1096.422 GiB; WAF 1.9894; WAF(�
   RUH별 host 비율: 0:64.2% 1:26.2% 2:9.6% 3:0.0%
   RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.
   유효량 급감 (overwrite 시간 비율): 51.6% -0.60 GiB, 98.7% -0.95 GiB
+lan3_u0.70_r2: VALID; host 551.371 GiB; total Media 1087.561 GiB; WAF 1.9725; WAF(시간 뒤1/3) 2.3293; 가운데1/3 2.0184; 실제 최고 사용률 69.21%
+  [주의] 가운데→뒤 1/3 WAF 차 13.3% > 5%. 아직 변하는 중. 판정에는 쓰고 해석 때 같이 봄
+  GC trigger 빈RU 21/2 of 211 (FEMU 로그); 실제 free RU 측정값 아님.
+  [추정] 여유 RU (뒤 1/3): 전체 211 - GC 기준 21 - 열린 RU 4 - 유효 129.8 = 56.2 RU (30.2%)
+  RUH별 host 비율: 0:64.2% 1:26.2% 2:9.6% 3:0.0%
+  RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.
+  유효량 급감 (overwrite 시간 비율): 52.1% -0.56 GiB, 99.6% -0.96 GiB
 lan3_u0.85: VALID; host 741.667 GiB; total Media 2969.330 GiB; WAF 4.0036; WAF(시간 뒤1/3) 4.6594; 가운데1/3 4.2366; 실제 최고 사용률 83.72%
   [주의] 가운데→뒤 1/3 WAF 차 9.1% > 5%. 아직 변하는 중. 판정에는 쓰고 해석 때 같이 봄
   GC trigger 빈RU 21/2 of 211 (FEMU 로그); 실제 free RU 측정값 아님.
@@ -14,6 +21,13 @@ lan3_u0.85: VALID; host 741.667 GiB; total Media 2969.330 GiB; WAF 4.0036; WAF(�
   RUH별 host 비율: 0:61.5% 1:25.9% 2:12.5% 3:0.0%
   RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.
   유효량 급감 (overwrite 시간 비율): 39.6% -0.83 GiB, 75.7% -0.95 GiB
+lan3_u0.85_r2: VALID; host 748.280 GiB; total Media 3023.000 GiB; WAF 4.0399; WAF(시간 뒤1/3) 4.6747; 가운데1/3 4.2902; 실제 최고 사용률 83.76%
+  [주의] 가운데→뒤 1/3 WAF 차 8.2% > 5%. 아직 변하는 중. 판정에는 쓰고 해석 때 같이 봄
+  GC trigger 빈RU 21/2 of 211 (FEMU 로그); 실제 free RU 측정값 아님.
+  [추정] 여유 RU (뒤 1/3): 전체 211 - GC 기준 21 - 열린 RU 4 - 유효 157.2 = 28.8 RU (15.5%)
+  RUH별 host 비율: 0:61.9% 1:25.7% 2:12.4% 3:0.0%
+  RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.
+  유효량 급감 (overwrite 시간 비율): 37.1% -0.83 GiB, 72.8% -0.96 GiB
 lan3_u0.93: VALID; host 857.166 GiB; total Media 5766.258 GiB; WAF 6.7271; WAF(시간 뒤1/3) 7.5681; 가운데1/3 7.0411; 실제 최고 사용률 91.79%
   [주의] 가운데→뒤 1/3 WAF 차 7.0% > 5%. 아직 변하는 중. 판정에는 쓰고 해석 때 같이 봄
   GC trigger 빈RU 21/2 of 211 (FEMU 로그); 실제 free RU 측정값 아님.
@@ -21,6 +35,13 @@ lan3_u0.93: VALID; host 857.166 GiB; total Media 5766.258 GiB; WAF 6.7271; WAF(�
   RUH별 host 비율: 0:60.8% 1:25.4% 2:13.8% 3:0.0%
   RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.
   유효량 급감 (overwrite 시간 비율): 32.2% -0.96 GiB, 63.3% -0.95 GiB, 91.4% -0.94 GiB
+lan3_u0.93_r2: VALID; host 849.317 GiB; total Media 5322.528 GiB; WAF 6.2668; WAF(시간 뒤1/3) 7.5849; 가운데1/3 7.0641; 실제 최고 사용률 91.83%
+  [주의] 가운데→뒤 1/3 WAF 차 6.9% > 5%. 아직 변하는 중. 판정에는 쓰고 해석 때 같이 봄
+  GC trigger 빈RU 21/2 of 211 (FEMU 로그); 실제 free RU 측정값 아님.
+  [추정] 여유 RU (뒤 1/3): 전체 211 - GC 기준 21 - 열린 RU 4 - 유효 171.9 = 14.1 RU (7.6%)
+  RUH별 host 비율: 0:60.4% 1:25.6% 2:14.0% 3:0.0%
+  RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.
+  유효량 급감 (overwrite 시간 비율): 63.6% -0.95 GiB, 92.8% -0.96 GiB
 lan5_u0.93: VALID; host 857.083 GiB; total Media 5939.986 GiB; WAF 6.9305; WAF(시간 뒤1/3) 7.7405; 가운데1/3 7.2556; 실제 최고 사용률 91.80%
   [주의] 가운데→뒤 1/3 WAF 차 6.3% > 5%. 아직 변하는 중. 판정에는 쓰고 해석 때 같이 봄
   GC trigger 빈RU 21/2 of 211 (FEMU 로그); 실제 free RU 측정값 아님.
@@ -35,6 +56,13 @@ lan_u0.70: VALID; host 550.980 GiB; total Media 1122.767 GiB; WAF 2.0378; WAF(�
   RUH별 host 비율: 0:4.6% 1:59.6% 2:26.3% 3:9.6% 4:0.0% 5:0.0%
   RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.
   유효량 급감 (overwrite 시간 비율): 50.2% -0.58 GiB, 97.8% -0.95 GiB
+lan_u0.70_r2: VALID; host 545.610 GiB; total Media 1099.838 GiB; WAF 2.0158; WAF(시간 뒤1/3) 2.3653; 가운데1/3 2.0529; 실제 최고 사용률 69.18%
+  [주의] 가운데→뒤 1/3 WAF 차 13.2% > 5%. 아직 변하는 중. 판정에는 쓰고 해석 때 같이 봄
+  GC trigger 빈RU 21/2 of 211 (FEMU 로그); 실제 free RU 측정값 아님.
+  [추정] 여유 RU (뒤 1/3): 전체 211 - GC 기준 21 - 열린 RU 6 - 유효 129.8 = 54.2 RU (29.5%)
+  RUH별 host 비율: 0:4.6% 1:59.2% 2:26.5% 3:9.7% 4:0.0% 5:0.0%
+  RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.
+  유효량 급감 (overwrite 시간 비율): 52.5% -0.60 GiB
 lan_u0.85: VALID; host 740.953 GiB; total Media 2984.443 GiB; WAF 4.0278; WAF(시간 뒤1/3) 4.6064; 가운데1/3 4.2522; 실제 최고 사용률 83.72%
   [주의] 가운데→뒤 1/3 WAF 차 7.7% > 5%. 아직 변하는 중. 판정에는 쓰고 해석 때 같이 봄
   GC trigger 빈RU 21/2 of 211 (FEMU 로그); 실제 free RU 측정값 아님.
@@ -42,6 +70,13 @@ lan_u0.85: VALID; host 740.953 GiB; total Media 2984.443 GiB; WAF 4.0278; WAF(�
   RUH별 host 비율: 0:4.4% 1:57.0% 2:25.9% 3:12.6% 4:0.0% 5:0.0%
   RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.
   유효량 급감 (overwrite 시간 비율): 36.6% -0.84 GiB, 72.7% -0.95 GiB
+lan_u0.85_r2: VALID; host 748.192 GiB; total Media 3004.907 GiB; WAF 4.0162; WAF(시간 뒤1/3) 4.6403; 가운데1/3 4.2419; 실제 최고 사용률 83.77%
+  [주의] 가운데→뒤 1/3 WAF 차 8.6% > 5%. 아직 변하는 중. 판정에는 쓰고 해석 때 같이 봄
+  GC trigger 빈RU 21/2 of 211 (FEMU 로그); 실제 free RU 측정값 아님.
+  [추정] 여유 RU (뒤 1/3): 전체 211 - GC 기준 21 - 열린 RU 6 - 유효 157.2 = 26.8 RU (14.6%)
+  RUH별 host 비율: 0:4.4% 1:57.4% 2:25.7% 3:12.4% 4:0.0% 5:0.0%
+  RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.
+  유효량 급감 (overwrite 시간 비율): 37.2% -0.82 GiB, 72.8% -0.96 GiB
 lan_u0.93: VALID; host 856.888 GiB; total Media 5721.850 GiB; WAF 6.6775; WAF(시간 뒤1/3) 8.1801; 가운데1/3 7.6083; 실제 최고 사용률 91.80%
   [주의] 가운데→뒤 1/3 WAF 차 7.0% > 5%. 아직 변하는 중. 판정에는 쓰고 해석 때 같이 봄
   GC trigger 빈RU 21/2 of 211 (FEMU 로그); 실제 free RU 측정값 아님.
@@ -56,6 +91,13 @@ lan_u0.93_r2: VALID; host 849.244 GiB; total Media 6130.770 GiB; WAF 7.2191; WAF
   RUH별 host 비율: 0:4.4% 1:56.0% 2:25.6% 3:14.0% 4:0.0% 5:0.0%
   RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.
   유효량 급감 (overwrite 시간 비율): 32.3% -0.97 GiB, 63.9% -0.95 GiB, 92.5% -0.95 GiB
+lan_u0.93_r3: VALID; host 849.136 GiB; total Media 5630.388 GiB; WAF 6.6307; WAF(시간 뒤1/3) 8.0923; 가운데1/3 7.5508; 실제 최고 사용률 91.77%
+  [주의] 가운데→뒤 1/3 WAF 차 6.7% > 5%. 아직 변하는 중. 판정에는 쓰고 해석 때 같이 봄
+  GC trigger 빈RU 21/2 of 211 (FEMU 로그); 실제 free RU 측정값 아님.
+  [추정] 여유 RU (뒤 1/3): 전체 211 - GC 기준 21 - 열린 RU 6 - 유효 171.9 = 12.1 RU (6.6%)
+  RUH별 host 비율: 0:4.4% 1:56.1% 2:25.6% 3:13.9% 4:0.0% 5:0.0%
+  RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.
+  유효량 급감 (overwrite 시간 비율): 63.5% -0.96 GiB, 92.4% -0.93 GiB
 single4_u0.70: VALID; host 545.864 GiB; total Media 1327.803 GiB; WAF 2.4325; WAF(시간 뒤1/3) 2.7025; 가운데1/3 2.5039; 실제 최고 사용률 69.17%
   [주의] 가운데→뒤 1/3 WAF 차 7.4% > 5%. 아직 변하는 중. 판정에는 쓰고 해석 때 같이 봄
   GC trigger 빈RU 21/2 of 211 (FEMU 로그); 실제 free RU 측정값 아님.
@@ -63,6 +105,13 @@ single4_u0.70: VALID; host 545.864 GiB; total Media 1327.803 GiB; WAF 2.4325; WA
   RUH별 host 비율: 0:100.0% 3:0.0%
   RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.
   유효량 급감 (overwrite 시간 비율): 52.2% -0.58 GiB, 100.0% -0.96 GiB
+single4_u0.70_r2: VALID; host 551.042 GiB; total Media 1346.982 GiB; WAF 2.4444; WAF(시간 뒤1/3) 2.7185; 가운데1/3 2.5108; 실제 최고 사용률 69.19%
+  [주의] 가운데→뒤 1/3 WAF 차 7.6% > 5%. 아직 변하는 중. 판정에는 쓰고 해석 때 같이 봄
+  GC trigger 빈RU 21/2 of 211 (FEMU 로그); 실제 free RU 측정값 아님.
+  [추정] 여유 RU (뒤 1/3): 전체 211 - GC 기준 21 - 열린 RU 4 - 유효 129.8 = 56.2 RU (30.2%)
+  RUH별 host 비율: 0:100.0% 3:0.0%
+  RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.
+  유효량 급감 (overwrite 시간 비율): 51.8% -0.60 GiB, 99.1% -0.96 GiB
 single4_u0.85: VALID; host 741.315 GiB; total Media 3077.527 GiB; WAF 4.1514; WAF(시간 뒤1/3) 4.6982; 가운데1/3 4.2601; 실제 최고 사용률 83.78%
   [주의] 가운데→뒤 1/3 WAF 차 9.3% > 5%. 아직 변하는 중. 판정에는 쓰고 해석 때 같이 봄
   GC trigger 빈RU 21/2 of 211 (FEMU 로그); 실제 free RU 측정값 아님.
@@ -70,6 +119,13 @@ single4_u0.85: VALID; host 741.315 GiB; total Media 3077.527 GiB; WAF 4.1514; WA
   RUH별 host 비율: 0:100.0% 3:0.0%
   RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.
   유효량 급감 (overwrite 시간 비율): 42.1% -0.82 GiB, 76.4% -0.95 GiB
+single4_u0.85_r2: VALID; host 748.467 GiB; total Media 3108.503 GiB; WAF 4.1532; WAF(시간 뒤1/3) 4.6918; 가운데1/3 4.2964; 실제 최고 사용률 83.77%
+  [주의] 가운데→뒤 1/3 WAF 차 8.4% > 5%. 아직 변하는 중. 판정에는 쓰고 해석 때 같이 봄
+  GC trigger 빈RU 21/2 of 211 (FEMU 로그); 실제 free RU 측정값 아님.
+  [추정] 여유 RU (뒤 1/3): 전체 211 - GC 기준 21 - 열린 RU 4 - 유효 157.2 = 28.8 RU (15.5%)
+  RUH별 host 비율: 0:100.0% 3:0.0%
+  RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.
+  유효량 급감 (overwrite 시간 비율): 37.5% -0.82 GiB, 73.3% -0.95 GiB
 single4_u0.93: VALID; host 849.289 GiB; total Media 6338.890 GiB; WAF 7.4638; WAF(시간 뒤1/3) 8.2848; 가운데1/3 7.8614; 실제 최고 사용률 91.80%
   [주의] 가운데→뒤 1/3 WAF 차 5.1% > 5%. 아직 변하는 중. 판정에는 쓰고 해석 때 같이 봄
   GC trigger 빈RU 21/2 of 211 (FEMU 로그); 실제 free RU 측정값 아님.
@@ -77,6 +133,13 @@ single4_u0.93: VALID; host 849.289 GiB; total Media 6338.890 GiB; WAF 7.4638; WA
   RUH별 host 비율: 0:100.0% 3:0.0%
   RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.
   유효량 급감 (overwrite 시간 비율): 33.2% -0.96 GiB, 65.9% -0.96 GiB, 94.1% -0.99 GiB
+single4_u0.93_r2: VALID; host 857.536 GiB; total Media 6433.130 GiB; WAF 7.5019; WAF(시간 뒤1/3) 8.3239; 가운데1/3 7.8815; 실제 최고 사용률 91.78%
+  [주의] 가운데→뒤 1/3 WAF 차 5.3% > 5%. 아직 변하는 중. 판정에는 쓰고 해석 때 같이 봄
+  GC trigger 빈RU 21/2 of 211 (FEMU 로그); 실제 free RU 측정값 아님.
+  [추정] 여유 RU (뒤 1/3): 전체 211 - GC 기준 21 - 열린 RU 4 - 유효 171.6 = 14.4 RU (7.7%)
+  RUH별 host 비율: 0:100.0% 3:0.0%
+  RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.
+  유효량 급감 (overwrite 시간 비율): 33.4% -0.95 GiB, 65.8% -0.94 GiB, 92.9% -0.94 GiB
 single6_u0.70: VALID; host 551.208 GiB; total Media 1378.865 GiB; WAF 2.5015; WAF(시간 뒤1/3) 2.7800; 가운데1/3 2.5805; 실제 최고 사용률 69.16%
   [주의] 가운데→뒤 1/3 WAF 차 7.2% > 5%. 아직 변하는 중. 판정에는 쓰고 해석 때 같이 봄
   GC trigger 빈RU 21/2 of 211 (FEMU 로그); 실제 free RU 측정값 아님.
@@ -84,6 +147,13 @@ single6_u0.70: VALID; host 551.208 GiB; total Media 1378.865 GiB; WAF 2.5015; WA
   RUH별 host 비율: 0:100.0% 5:0.0%
   RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.
   유효량 급감 (overwrite 시간 비율): 50.1% -0.60 GiB, 97.6% -0.95 GiB
+single6_u0.70_r2: VALID; host 546.156 GiB; total Media 1349.471 GiB; WAF 2.4709; WAF(시간 뒤1/3) 2.7656; 가운데1/3 2.5346; 실제 최고 사용률 69.11%
+  [주의] 가운데→뒤 1/3 WAF 차 8.4% > 5%. 아직 변하는 중. 판정에는 쓰고 해석 때 같이 봄
+  GC trigger 빈RU 21/2 of 211 (FEMU 로그); 실제 free RU 측정값 아님.
+  [추정] 여유 RU (뒤 1/3): 전체 211 - GC 기준 21 - 열린 RU 6 - 유효 129.7 = 54.3 RU (29.5%)
+  RUH별 host 비율: 0:100.0% 5:0.0%
+  RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.
+  유효량 급감 (overwrite 시간 비율): 52.6% -0.59 GiB
 single6_u0.85: VALID; host 740.924 GiB; total Media 3260.626 GiB; WAF 4.4008; WAF(시간 뒤1/3) 4.9682; 가운데1/3 4.5687; 실제 최고 사용률 83.78%
   [주의] 가운데→뒤 1/3 WAF 차 8.0% > 5%. 아직 변하는 중. 판정에는 쓰고 해석 때 같이 봄
   GC trigger 빈RU 21/2 of 211 (FEMU 로그); 실제 free RU 측정값 아님.
@@ -91,6 +161,13 @@ single6_u0.85: VALID; host 740.924 GiB; total Media 3260.626 GiB; WAF 4.4008; WA
   RUH별 host 비율: 0:100.0% 5:0.0%
   RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.
   유효량 급감 (overwrite 시간 비율): 36.7% -0.83 GiB, 72.7% -0.98 GiB
+single6_u0.85_r2: VALID; host 748.146 GiB; total Media 3267.194 GiB; WAF 4.3671; WAF(시간 뒤1/3) 4.9218; 가운데1/3 4.5515; 실제 최고 사용률 83.76%
+  [주의] 가운데→뒤 1/3 WAF 차 7.5% > 5%. 아직 변하는 중. 판정에는 쓰고 해석 때 같이 봄
+  GC trigger 빈RU 21/2 of 211 (FEMU 로그); 실제 free RU 측정값 아님.
+  [추정] 여유 RU (뒤 1/3): 전체 211 - GC 기준 21 - 열린 RU 6 - 유효 157.2 = 26.8 RU (14.6%)
+  RUH별 host 비율: 0:100.0% 5:0.0%
+  RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.
+  유효량 급감 (overwrite 시간 비율): 37.0% -0.82 GiB, 72.8% -0.96 GiB
 single6_u0.93: VALID; host 856.686 GiB; total Media 6409.196 GiB; WAF 7.4814; WAF(시간 뒤1/3) 9.2355; 가운데1/3 8.5380; 실제 최고 사용률 91.75%
   [주의] 가운데→뒤 1/3 WAF 차 7.6% > 5%. 아직 변하는 중. 판정에는 쓰고 해석 때 같이 봄
   GC trigger 빈RU 21/2 of 211 (FEMU 로그); 실제 free RU 측정값 아님.
@@ -105,6 +182,13 @@ single6_u0.93_r2: VALID; host 849.212 GiB; total Media 6844.450 GiB; WAF 8.0598;
   RUH별 host 비율: 0:100.0% 5:0.0%
   RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.
   유효량 급감 (overwrite 시간 비율): 32.4% -0.97 GiB, 63.9% -0.94 GiB, 92.4% -0.95 GiB
+single6_u0.93_r3: VALID; host 849.290 GiB; total Media 6850.124 GiB; WAF 8.0657; WAF(시간 뒤1/3) 9.0491; 가운데1/3 8.4729; 실제 최고 사용률 91.79%
+  [주의] 가운데→뒤 1/3 WAF 차 6.4% > 5%. 아직 변하는 중. 판정에는 쓰고 해석 때 같이 봄
+  GC trigger 빈RU 21/2 of 211 (FEMU 로그); 실제 free RU 측정값 아님.
+  [추정] 여유 RU (뒤 1/3): 전체 211 - GC 기준 21 - 열린 RU 6 - 유효 171.8 = 12.2 RU (6.6%)
+  RUH별 host 비율: 0:100.0% 5:0.0%
+  RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.
+  유효량 급감 (overwrite 시간 비율): 32.5% -0.98 GiB, 64.5% -0.95 GiB, 92.9% -0.94 GiB
 single_u0.70: VALID; host 545.950 GiB; total Media 1315.469 GiB; WAF 2.4095; WAF(시간 뒤1/3) 2.6694; 가운데1/3 2.4785; 실제 최고 사용률 69.16%
   [주의] 가운데→뒤 1/3 WAF 차 7.1% > 5%. 아직 변하는 중. 판정에는 쓰고 해석 때 같이 봄
   GC trigger 빈RU 21/2 of 211 (FEMU 로그); 실제 free RU 측정값 아님.
@@ -112,6 +196,13 @@ single_u0.70: VALID; host 545.950 GiB; total Media 1315.469 GiB; WAF 2.4095; WAF
   RUH별 host 비율: 0:100.0% 1:0.0%
   RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.
   유효량 급감 (overwrite 시간 비율): 52.9% -0.59 GiB, 99.7% -0.95 GiB
+single_u0.70_r2: VALID; host 545.671 GiB; total Media 1307.193 GiB; WAF 2.3956; WAF(시간 뒤1/3) 2.6557; 가운데1/3 2.4584; 실제 최고 사용률 69.13%
+  [주의] 가운데→뒤 1/3 WAF 차 7.4% > 5%. 아직 변하는 중. 판정에는 쓰고 해석 때 같이 봄
+  GC trigger 빈RU 21/2 of 211 (FEMU 로그); 실제 free RU 측정값 아님.
+  [추정] 여유 RU (뒤 1/3): 전체 211 - GC 기준 21 - 열린 RU 2 - 유효 129.8 = 58.2 RU (31.0%)
+  RUH별 host 비율: 0:100.0% 1:0.0%
+  RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.
+  유효량 급감 (overwrite 시간 비율): 52.6% -0.58 GiB
 single_u0.85: VALID; host 748.176 GiB; total Media 2986.882 GiB; WAF 3.9922; WAF(시간 뒤1/3) 4.4823; 가운데1/3 4.1381; 실제 최고 사용률 83.77%
   [주의] 가운데→뒤 1/3 WAF 차 7.7% > 5%. 아직 변하는 중. 판정에는 쓰고 해석 때 같이 봄
   GC trigger 빈RU 21/2 of 211 (FEMU 로그); 실제 free RU 측정값 아님.
@@ -119,6 +210,13 @@ single_u0.85: VALID; host 748.176 GiB; total Media 2986.882 GiB; WAF 3.9922; WAF
   RUH별 host 비율: 0:100.0% 1:0.0%
   RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.
   유효량 급감 (overwrite 시간 비율): 37.5% -0.82 GiB, 73.9% -0.97 GiB
+single_u0.85_r2: VALID; host 748.348 GiB; total Media 2982.873 GiB; WAF 3.9859; WAF(시간 뒤1/3) 4.4772; 가운데1/3 4.1322; 실제 최고 사용률 83.74%
+  [주의] 가운데→뒤 1/3 WAF 차 7.7% > 5%. 아직 변하는 중. 판정에는 쓰고 해석 때 같이 봄
+  GC trigger 빈RU 21/2 of 211 (FEMU 로그); 실제 free RU 측정값 아님.
+  [추정] 여유 RU (뒤 1/3): 전체 211 - GC 기준 21 - 열린 RU 2 - 유효 157.2 = 30.8 RU (16.4%)
+  RUH별 host 비율: 0:100.0% 1:0.0%
+  RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.
+  유효량 급감 (overwrite 시간 비율): 36.4% -0.82 GiB, 72.1% -0.96 GiB
 single_u0.93: VALID; host 848.954 GiB; total Media 5395.510 GiB; WAF 6.3555; WAF(시간 뒤1/3) 7.7328; 가운데1/3 7.1775; 실제 최고 사용률 91.77%
   [주의] 가운데→뒤 1/3 WAF 차 7.2% > 5%. 아직 변하는 중. 판정에는 쓰고 해석 때 같이 봄
   GC trigger 빈RU 21/2 of 211 (FEMU 로그); 실제 free RU 측정값 아님.
@@ -133,38 +231,58 @@ single_u0.93_r2: VALID; host 857.221 GiB; total Media 5851.421 GiB; WAF 6.8260; 
   RUH별 host 비율: 0:100.0% 1:0.0%
   RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.
   유효량 급감 (overwrite 시간 비율): 32.0% -0.95 GiB, 63.1% -0.96 GiB, 91.5% -0.94 GiB
-[빌드 다름: 판정·주 비교에서 뺌, 아래 참고 비교에만] lan3_u0.70 (build(binary_sha256, torfs_diff_sha256)); lan3_u0.85 (build(binary_sha256, torfs_diff_sha256)); lan3_u0.93 (build(binary_sha256, torfs_diff_sha256)); lan5_u0.93 (build(binary_sha256, torfs_diff_sha256))
+single_u0.93_r3: VALID; host 849.438 GiB; total Media 5771.189 GiB; WAF 6.7941; WAF(시간 뒤1/3) 7.6001; 가운데1/3 7.1232; 실제 최고 사용률 91.82%
+  [주의] 가운데→뒤 1/3 WAF 차 6.3% > 5%. 아직 변하는 중. 판정에는 쓰고 해석 때 같이 봄
+  GC trigger 빈RU 21/2 of 211 (FEMU 로그); 실제 free RU 측정값 아님.
+  [추정] 여유 RU (뒤 1/3): 전체 211 - GC 기준 21 - 열린 RU 2 - 유효 171.9 = 16.1 RU (8.6%)
+  RUH별 host 비율: 0:100.0% 1:0.0%
+  RUH별 media는 source RUH 귀속이며 파일 종류별 GC 비용이 아님.
+  유효량 급감 (overwrite 시간 비율): 32.4% -0.94 GiB, 64.6% -0.95 GiB, 93.5% -0.94 GiB
+[빌드 다름: 판정·주 비교에서 뺌, 아래 참고 비교에만] lan3_u0.70 (build(binary_sha256, torfs_diff_sha256)); lan3_u0.70_r2 (build(binary_sha256, torfs_diff_sha256)); lan3_u0.85 (build(binary_sha256, torfs_diff_sha256)); lan3_u0.85_r2 (build(binary_sha256, torfs_diff_sha256)); lan3_u0.93 (build(binary_sha256, torfs_diff_sha256)); lan3_u0.93_r2 (build(binary_sha256, torfs_diff_sha256)); lan5_u0.93 (build(binary_sha256, torfs_diff_sha256))
 [주의] run마다 실행 스크립트 버전이 다름 (실험 설정·빌드는 같음). 버그 수정 등 변경 내용을 같이 기록할 것
-[주의] 아직 변하는 run 포함: lan_u0.70, lan_u0.85, lan_u0.93, lan_u0.93_r2, single4_u0.70, single4_u0.85, single4_u0.93, single6_u0.70, single6_u0.85, single6_u0.93, single6_u0.93_r2, single_u0.70, single_u0.85, single_u0.93, single_u0.93_r2 → 판정 해석 때 같이 볼 것
-사용률 0.70: WAF 감소율 +10.10% = 1 − WAF_lan/WAF_single (시간 뒤1/3)
-  추가 열린RU 조건의 WAF 변화율: +4.15%
-  열린RU 수 동일 조건의 배치 WAF 감소율: +13.68%
-  열린RU +2 칸 비용 (WAF_single4/WAF_single − 1): +1.24%
-사용률 0.85: WAF 감소율 -2.77% = 1 − WAF_lan/WAF_single (시간 뒤1/3)
-  추가 열린RU 조건의 WAF 변화율: +10.84%
-  열린RU 수 동일 조건의 배치 WAF 감소율: +7.28%
-  열린RU +2 칸 비용 (WAF_single4/WAF_single − 1): +4.82%
-사용률 0.93: WAF 감소율 -5.53% = 1 − WAF_lan/WAF_single (시간 뒤1/3)
-  추가 열린RU 조건의 WAF 변화율: +18.56%
-  열린RU 수 동일 조건의 배치 WAF 감소율: +10.99%
-  열린RU +2 칸 비용 (WAF_single4/WAF_single − 1): +7.36%
+[주의] 아직 변하는 run 포함: lan_u0.70, lan_u0.70_r2, lan_u0.85, lan_u0.85_r2, lan_u0.93, lan_u0.93_r2, lan_u0.93_r3, single4_u0.70, single4_u0.70_r2, single4_u0.85, single4_u0.85_r2, single4_u0.93, single4_u0.93_r2, single6_u0.70, single6_u0.70_r2, single6_u0.85, single6_u0.85_r2, single6_u0.93, single6_u0.93_r2, single6_u0.93_r3, single_u0.70, single_u0.70_r2, single_u0.85, single_u0.85_r2, single_u0.93, single_u0.93_r2, single_u0.93_r3 → 판정 해석 때 같이 볼 것
+사용률 0.70: WAF 감소율 +10.52% = 1 − WAF_lan/WAF_single (시간 뒤1/3)
+  추가 열린RU 조건의 WAF 변화율: +4.14%
+  열린RU 수 동일 조건의 배치 WAF 감소율: +14.08%
+  열린RU +2 칸 비용 (WAF_single4/WAF_single − 1): +1.80%
+사용률 0.85: WAF 감소율 -3.21% = 1 − WAF_lan/WAF_single (시간 뒤1/3)
+  추가 열린RU 조건의 WAF 변화율: +10.39%
+  열린RU 수 동일 조건의 배치 WAF 감소율: +6.50%
+  열린RU +2 칸 비용 (WAF_single4/WAF_single − 1): +4.81%
+사용률 0.93: WAF 감소율 -5.84% = 1 − WAF_lan/WAF_single (시간 뒤1/3)
+  추가 열린RU 조건의 WAF 변화율: +18.73%
+  열린RU 수 동일 조건의 배치 WAF 감소율: +10.85%
+  열린RU +2 칸 비용 (WAF_single4/WAF_single − 1): +8.16%
 [참고, 빌드 다름] lan3_u0.70 (WAF 뒤1/3 2.3603):
-  열린RU 수 동일(4) 배치 효과 (1 − WAF_lan3/WAF_single4): +12.66%
-  lan3 개선율 (1 − WAF_lan3/WAF_lan): +1.64%
-  lan3 vs single WAF 감소율 (1 − WAF_lan3/WAF_single): +11.58%
+  열린RU 수 동일(4) 배치 효과 (1 − WAF_lan3/WAF_single4): +12.92%
+  lan3 개선율 (1 − WAF_lan3/WAF_lan): +0.93%
+  lan3 vs single WAF 감소율 (1 − WAF_lan3/WAF_single): +11.35%
+[참고, 빌드 다름] lan3_u0.70_r2 (WAF 뒤1/3 2.3293):
+  열린RU 수 동일(4) 배치 효과 (1 − WAF_lan3/WAF_single4): +14.07%
+  lan3 개선율 (1 − WAF_lan3/WAF_lan): +2.23%
+  lan3 vs single WAF 감소율 (1 − WAF_lan3/WAF_single): +12.52%
 [참고, 빌드 다름] lan3_u0.85 (WAF 뒤1/3 4.6594):
-  열린RU 수 동일(4) 배치 효과 (1 − WAF_lan3/WAF_single4): +0.83%
-  lan3 개선율 (1 − WAF_lan3/WAF_lan): -1.15%
-  lan3 vs single WAF 감소율 (1 − WAF_lan3/WAF_single): -3.95%
+  열린RU 수 동일(4) 배치 효과 (1 − WAF_lan3/WAF_single4): +0.76%
+  lan3 개선율 (1 − WAF_lan3/WAF_lan): -0.78%
+  lan3 vs single WAF 감소율 (1 − WAF_lan3/WAF_single): -4.01%
+[참고, 빌드 다름] lan3_u0.85_r2 (WAF 뒤1/3 4.6747):
+  열린RU 수 동일(4) 배치 효과 (1 − WAF_lan3/WAF_single4): +0.43%
+  lan3 개선율 (1 − WAF_lan3/WAF_lan): -1.11%
+  lan3 vs single WAF 감소율 (1 − WAF_lan3/WAF_single): -4.35%
 [참고, 빌드 다름] lan3_u0.93 (WAF 뒤1/3 7.5681):
-  열린RU 수 동일(4) 배치 효과 (1 − WAF_lan3/WAF_single4): +8.65%
-  lan3 개선율 (1 − WAF_lan3/WAF_lan): +7.07%
-  lan3 vs single WAF 감소율 (1 − WAF_lan3/WAF_single): +1.93%
+  열린RU 수 동일(4) 배치 효과 (1 − WAF_lan3/WAF_single4): +8.87%
+  lan3 개선율 (1 − WAF_lan3/WAF_lan): +6.87%
+  lan3 vs single WAF 감소율 (1 − WAF_lan3/WAF_single): +1.43%
   WAL 칸 합침 효과 (1 − WAF_lan3/WAF_lan5): +2.23%
+[참고, 빌드 다름] lan3_u0.93_r2 (WAF 뒤1/3 7.5849):
+  열린RU 수 동일(4) 배치 효과 (1 − WAF_lan3/WAF_single4): +8.66%
+  lan3 개선율 (1 − WAF_lan3/WAF_lan): +6.67%
+  lan3 vs single WAF 감소율 (1 − WAF_lan3/WAF_single): +1.21%
+  WAL 칸 합침 효과 (1 − WAF_lan3/WAF_lan5): +2.01%
 [참고, 빌드 다름] lan5_u0.93 (WAF 뒤1/3 7.7405):
-  MANIFEST 칸 제거 효과 (1 − WAF_lan5/WAF_lan): +4.95%
-  WAL 칸 합침 효과 (1 − WAF_lan3/WAF_lan5): +2.23%
-  lan5 vs single WAF 감소율 (1 − WAF_lan5/WAF_single): -0.30%
-이득 비율 gain(93%)/gain(70%) = -0.547
+  MANIFEST 칸 제거 효과 (1 − WAF_lan5/WAF_lan): +4.75%
+  WAL 칸 합침 효과 (1 − WAF_lan3/WAF_lan5): +2.12%
+  lan5 vs single WAF 감소율 (1 − WAF_lan5/WAF_single): -0.81%
+이득 비율 gain(93%)/gain(70%) = -0.555
 판정: 고사용률에서 WAF 이득 감소 관찰 (단일 실행 파일럿).
 단일 실행 파일럿이며 통계적 우월성이나 열린RU 원인을 확정하지 않음.

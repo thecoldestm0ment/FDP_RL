@@ -1,0 +1,11 @@
+[femu] 새로 띄운 FEMU라 초기화 생략.
+policy=single4
+nruh=4  (기대 4)
+ruh_types=0:II 1:II 2:II 3:II
+placement(pid->ruh)=0->0
+torfs_pid_map=-
+invalid_pid_cmds_at_start=0
+check=OK
+[옵션] load: 결과: 통과 28 / 불일치 0 / 누락 0
+[옵션] overwrite: 결과: 통과 28 / 불일치 0 / 누락 0
+[femu] 완료: /home/femu/fdp_pilot_work/results/single4_u0.85_r2
