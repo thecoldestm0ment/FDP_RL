@@ -1,0 +1,24 @@
+# 스크립트가 최종으로 정한 값 (2026-11-25 11:13:18)
+script=02_femu_run.sh
+policy=lan3
+util=0.85
+REP=3
+SCALE=1 (FEMU는 크기 줄이기 없음)
+TORFS_FORCE_PID=unset  (single*=0, lan·lan3·lan5=unset -> Lan 패치의 레벨별 hint)
+TORFS_PID_MAP=0,0,1,2,0  (lan3·lan5: 기본 PID 0 WAL,1 L0–L3,2 L4,3 L5+,4 MANIFEST -> i번째 값)
+PILOT_DB_BENCH=unset  (map = 작은 시험 전용, 패치 중립 확인)
+N(--num)=15273953
+W(--writes, 스레드당)=7636977
+overwrite 전체 연산 수 = W x THREADS = 30547908
+논리 데이터 대비 배수 = W x THREADS / N = 2.0000
+logical_bytes = N x (KEY_SIZE + VALUE_SIZE) = 15884911120
+TORFS_DB_DIR=/home/femu/fdp_pilot_work/torfs_db
+FS_URI=torfs:xnvme:/dev/ng0n1?be=io_uring_cmd
+RESULTS=/home/femu/fdp_pilot_work/results
+db_bench=/home/femu/fdp_pilot_work/bin/db_bench_torfs_map
+OVERWRITE_MULT=2  (밖에서 받은 값: 2)
+SEED=1
+THREADS=4  (load 는 1)
+TRACK_STATS=1 STATS_INTERVAL_SEC=60 SAVE_FULL_LOG=1 OPTCHECK_STRICT=1
+LD_PRELOAD(밖에서)=(없음)  (db_bench 에는 liblinebuf.so 만)
+NOFSYNC=0
